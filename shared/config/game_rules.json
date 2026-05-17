@@ -62,6 +62,15 @@
     "types": ["瓷器", "书画", "玉器", "青铜器", "杂项"],
     "sell_value": "true_value"
   },
+  "settlement": {
+    "loss_sharing": {
+      "enabled": true,
+      "applies_to": "winner",
+      "condition": "winner_net_profit_negative",
+      "split_among": "all_players",
+      "calculation": "absolute_loss_divided_equally_as_gain"
+    }
+  },
   "roles": {
     "enabled": false,
     "reserved": true
