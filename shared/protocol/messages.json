@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "clientToServer": [
+    "auth.guest",
+    "room.create",
+    "room.join",
+    "room.leave",
+    "room.ready",
+    "auction.bid"
+  ],
+  "serverToClient": [
+    "auth.accepted",
+    "room.snapshot",
+    "room.player_joined",
+    "room.player_left",
+    "auction.started",
+    "auction.round_started",
+    "auction.bid_accepted",
+    "auction.bid_rejected",
+    "auction.round_settled",
+    "auction.finished",
+    "error"
+  ]
+}

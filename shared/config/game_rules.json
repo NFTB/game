@@ -1,0 +1,12 @@
+{
+  "room": {
+    "minPlayers": 2,
+    "maxPlayers": 4
+  },
+  "auction": {
+    "roundsPerMatch": 5,
+    "bidSeconds": 20,
+    "startingCoins": 1000,
+    "minBid": 1
+  }
+}

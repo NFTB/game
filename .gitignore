@@ -1,0 +1,57 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Unity generated folders
+/client/[Ll]ibrary/
+/client/[Tt]emp/
+/client/[Oo]bj/
+/client/[Bb]uild/
+/client/[Bb]uilds/
+/client/[Ll]ogs/
+/client/[Uu]ser[Ss]ettings/
+/client/MemoryCaptures/
+/client/Recordings/
+/client/.vs/
+
+# Unity generated solution files
+/client/*.csproj
+/client/*.sln
+/client/*.suo
+/client/*.user
+/client/*.userprefs
+/client/*.pidb
+/client/*.booproj
+/client/*.svd
+/client/*.pdb
+/client/*.mdb
+/client/*.opendb
+/client/*.VC.db
+/client/sysinfo.txt
+
+# Unity build outputs
+/client/*.apk
+/client/*.aab
+/client/*.unitypackage
+/client/[Aa]ssets/AssetStoreTools*
+
+# Go
+server/bin/
+server/coverage.out
+server/*.test
+
+# Env
+.env
+.env.*
+!.env.example
+.cache/
+
+# Logs
+*.log

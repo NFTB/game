@@ -1,0 +1,26 @@
+[
+  {
+    "id": "item_porcelain_vase",
+    "name": "Porcelain Vase",
+    "rarity": "common",
+    "baseValue": 120,
+    "valueVariance": 40,
+    "tags": ["ceramic", "antique"]
+  },
+  {
+    "id": "item_jade_seal",
+    "name": "Jade Seal",
+    "rarity": "rare",
+    "baseValue": 520,
+    "valueVariance": 160,
+    "tags": ["jade", "historic"]
+  },
+  {
+    "id": "item_pocket_watch",
+    "name": "Pocket Watch",
+    "rarity": "uncommon",
+    "baseValue": 260,
+    "valueVariance": 80,
+    "tags": ["metal", "mechanical"]
+  }
+]
