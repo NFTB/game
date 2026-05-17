@@ -1,0 +1,8 @@
+[
+  {
+    "id": "antique_market",
+    "name": "古玩市场",
+    "clue_pool": ["轮廓", "稀有度", "类型"],
+    "public_clues_per_round": 1
+  }
+]

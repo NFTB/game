@@ -1,0 +1,10 @@
+[
+  {
+    "id": "reserved_role",
+    "name": "预留角色",
+    "enabled": false,
+    "skill_type": "reserved",
+    "trigger": "reserved",
+    "effect": "reserved"
+  }
+]

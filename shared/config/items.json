@@ -1,26 +1,46 @@
 [
   {
-    "id": "item_porcelain_vase",
-    "name": "Porcelain Vase",
-    "rarity": "common",
-    "baseValue": 120,
-    "valueVariance": 40,
-    "tags": ["ceramic", "antique"]
+    "id": "magnifier",
+    "name": "放大镜",
+    "type": "信息",
+    "tier": "N",
+    "price": 5000,
+    "effect": "random_clue",
+    "visibility": "owner_only",
+    "effect_config": {
+      "count": 1
+    }
   },
   {
-    "id": "item_jade_seal",
-    "name": "Jade Seal",
-    "rarity": "rare",
-    "baseValue": 520,
-    "valueVariance": 160,
-    "tags": ["jade", "historic"]
+    "id": "outline_scanner",
+    "name": "轮廓扫描",
+    "type": "信息",
+    "tier": "R",
+    "price": 15000,
+    "effect": "reveal_tier_outlines",
+    "visibility": "owner_only",
+    "effect_config": {
+      "tier": "N"
+    }
   },
   {
-    "id": "item_pocket_watch",
-    "name": "Pocket Watch",
-    "rarity": "uncommon",
-    "baseValue": 260,
-    "valueVariance": 80,
-    "tags": ["metal", "mechanical"]
+    "id": "peek",
+    "name": "窥探",
+    "type": "侦查",
+    "tier": "N",
+    "price": 5000,
+    "effect": "reveal_opponent_gold",
+    "visibility": "owner_only",
+    "effect_config": {}
+  },
+  {
+    "id": "eavesdrop",
+    "name": "窃听",
+    "type": "侦查",
+    "tier": "R",
+    "price": 15000,
+    "effect": "reveal_opponent_bid_hint",
+    "visibility": "owner_only",
+    "effect_config": {}
   }
 ]

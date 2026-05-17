@@ -1,0 +1,19 @@
+[
+  {
+    "id": "underground",
+    "name": "地下拍卖所",
+    "round_entry_fee": 100000,
+    "value_multiplier": 1.0,
+    "collectible_count_range": {
+      "min": 30,
+      "max": 60
+    },
+    "long_term_tier_ratio": {
+      "N": 4,
+      "R": 3,
+      "SR": 2,
+      "SSR": 1
+    },
+    "long_term_type_distribution": "even"
+  }
+]

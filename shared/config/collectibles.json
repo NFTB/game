@@ -1,0 +1,22 @@
+[
+  { "id": "porcelain_001", "name": "明代青花瓷瓶", "type": "瓷器", "tier": "R", "size": [2, 1], "outline": "2x1", "true_value": 450000, "sell_value": 450000 },
+  { "id": "porcelain_002", "name": "清乾隆粉彩碗", "type": "瓷器", "tier": "SR", "size": [2, 1], "outline": "2x1", "true_value": 800000, "sell_value": 800000 },
+  { "id": "porcelain_003", "name": "汝窑天青釉盘", "type": "瓷器", "tier": "SSR", "size": [2, 2], "outline": "2x2", "true_value": 1500000, "sell_value": 1500000 },
+  { "id": "porcelain_004", "name": "民窑青花罐", "type": "瓷器", "tier": "N", "size": [1, 1], "outline": "1x1", "true_value": 50000, "sell_value": 50000 },
+  { "id": "painting_001", "name": "齐白石虾趣图", "type": "书画", "tier": "SR", "size": [1, 2], "outline": "1x2", "true_value": 900000, "sell_value": 900000 },
+  { "id": "painting_002", "name": "王羲之兰亭序摹本", "type": "书画", "tier": "SSR", "size": [1, 2], "outline": "1x2", "true_value": 2000000, "sell_value": 2000000 },
+  { "id": "painting_003", "name": "清代山水扇面", "type": "书画", "tier": "N", "size": [1, 1], "outline": "1x1", "true_value": 60000, "sell_value": 60000 },
+  { "id": "painting_004", "name": "郑板桥竹石图", "type": "书画", "tier": "R", "size": [1, 2], "outline": "1x2", "true_value": 500000, "sell_value": 500000 },
+  { "id": "jade_001", "name": "汉代玉璧", "type": "玉器", "tier": "SR", "size": [2, 1], "outline": "2x1", "true_value": 850000, "sell_value": 850000 },
+  { "id": "jade_002", "name": "清代翡翠扳指", "type": "玉器", "tier": "R", "size": [1, 1], "outline": "1x1", "true_value": 400000, "sell_value": 400000 },
+  { "id": "jade_003", "name": "和田玉雕摆件", "type": "玉器", "tier": "SSR", "size": [2, 2], "outline": "2x2", "true_value": 1800000, "sell_value": 1800000 },
+  { "id": "jade_004", "name": "岫玉挂件", "type": "玉器", "tier": "N", "size": [1, 1], "outline": "1x1", "true_value": 40000, "sell_value": 40000 },
+  { "id": "bronze_001", "name": "商代青铜鼎", "type": "青铜器", "tier": "SSR", "size": [2, 2], "outline": "2x2", "true_value": 2500000, "sell_value": 2500000 },
+  { "id": "bronze_002", "name": "西周青铜编钟", "type": "青铜器", "tier": "SR", "size": [2, 2], "outline": "2x2", "true_value": 950000, "sell_value": 950000 },
+  { "id": "bronze_003", "name": "战国青铜剑", "type": "青铜器", "tier": "R", "size": [2, 1], "outline": "2x1", "true_value": 550000, "sell_value": 550000 },
+  { "id": "bronze_004", "name": "汉代铜镜", "type": "青铜器", "tier": "N", "size": [1, 1], "outline": "1x1", "true_value": 70000, "sell_value": 70000 },
+  { "id": "misc_001", "name": "清代鼻烟壶", "type": "杂项", "tier": "R", "size": [1, 1], "outline": "1x1", "true_value": 350000, "sell_value": 350000 },
+  { "id": "misc_002", "name": "民国银元", "type": "杂项", "tier": "N", "size": [1, 1], "outline": "1x1", "true_value": 30000, "sell_value": 30000 },
+  { "id": "misc_003", "name": "大明宣德炉", "type": "杂项", "tier": "SR", "size": [2, 1], "outline": "2x1", "true_value": 750000, "sell_value": 750000 },
+  { "id": "misc_004", "name": "清代邮票四方联", "type": "杂项", "tier": "R", "size": [1, 2], "outline": "1x2", "true_value": 300000, "sell_value": 300000 }
+]
