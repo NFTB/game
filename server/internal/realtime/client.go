@@ -114,12 +114,21 @@ func (h *Hub) removeFromRoomLocked(client *Client) {
 func (h *Hub) dispatch(sender *Client, responses []OutboundEnvelope) {
 	h.refreshRoom(sender)
 	for _, response := range responses {
-		if response.Type == "room.snapshot" && sender.session.RoomID != "" {
+		if isRoomBroadcast(response.Type) && sender.session.RoomID != "" {
 			h.broadcastRoom(sender.session.RoomID, response)
 			continue
 		}
 
 		h.send(sender, response)
+	}
+}
+
+func isRoomBroadcast(messageType string) bool {
+	switch messageType {
+	case "room.snapshot", "auction.round_settled", "auction.finished":
+		return true
+	default:
+		return false
 	}
 }
 

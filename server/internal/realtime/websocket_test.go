@@ -77,6 +77,45 @@ func TestHubBroadcastsRoomSnapshot(t *testing.T) {
 	}
 }
 
+func TestHubBroadcastsRoundSettled(t *testing.T) {
+	server := newWebSocketTestServer(t)
+	defer server.Close()
+
+	aliceConn, aliceReader := dialWebSocket(t, server.URL)
+	defer aliceConn.Close()
+	bobConn, bobReader := dialWebSocket(t, server.URL)
+	defer bobConn.Close()
+
+	writeClientTextFrame(t, aliceConn, mustEnvelope(t, "auth.guest", "auth_alice", map[string]any{"displayName": "Alice"}))
+	readTypedServerMessage(t, aliceReader)
+	writeClientTextFrame(t, bobConn, mustEnvelope(t, "auth.guest", "auth_bob", map[string]any{"displayName": "Bob"}))
+	readTypedServerMessage(t, bobReader)
+
+	writeClientTextFrame(t, aliceConn, mustEnvelope(t, "room.create", "create", map[string]any{}))
+	roomID := nestedString(t, readTypedServerMessage(t, aliceReader), "payload", "roomId")
+	writeClientTextFrame(t, bobConn, mustEnvelope(t, "room.join", "join", map[string]any{"roomId": roomID}))
+	readTypedServerMessage(t, aliceReader)
+	readTypedServerMessage(t, bobReader)
+
+	writeClientTextFrame(t, aliceConn, mustEnvelope(t, "room.ready", "ready_alice", map[string]any{"ready": true}))
+	readTypedServerMessage(t, aliceReader)
+	readTypedServerMessage(t, bobReader)
+	writeClientTextFrame(t, bobConn, mustEnvelope(t, "room.ready", "ready_bob", map[string]any{"ready": true}))
+	readTypedServerMessage(t, aliceReader)
+	readTypedServerMessage(t, bobReader)
+
+	writeClientTextFrame(t, aliceConn, mustEnvelope(t, "auction.bid", "bid", map[string]any{"amount": 100}))
+	readTypedServerMessage(t, aliceReader)
+	readTypedServerMessage(t, aliceReader)
+	readTypedServerMessage(t, bobReader)
+
+	writeClientTextFrame(t, bobConn, mustEnvelope(t, "auction.pass", "pass", map[string]any{}))
+	aliceSettled := readTypedServerMessage(t, aliceReader)
+	if aliceSettled["type"] != "auction.round_settled" {
+		t.Fatalf("alice message = %+v, want auction.round_settled", aliceSettled)
+	}
+}
+
 func newWebSocketTestServer(t *testing.T) *httptest.Server {
 	t.Helper()
 
