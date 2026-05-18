@@ -23,6 +23,7 @@ type RoomCommands interface {
 	LeaveRoom(ctx context.Context, playerID string) error
 	SetReady(ctx context.Context, roomID string, playerID string, ready bool) (game.RoomSnapshot, error)
 	PlaceBid(ctx context.Context, roomID string, playerID string, amount int) (application.PlaceBidResult, error)
+	PassBid(ctx context.Context, roomID string, playerID string) (application.PlaceBidResult, error)
 	SettleRound(ctx context.Context, roomID string, playerID string) (application.SettleRoundResult, error)
 	RoomIDForPlayer(ctx context.Context, playerID string) (string, error)
 }
@@ -65,6 +66,8 @@ func (r *MessageRouter) Route(ctx context.Context, session *ClientSession, data 
 		return r.handleRoomReady(ctx, session, envelope)
 	case "auction.bid":
 		return r.handleAuctionBid(ctx, session, envelope)
+	case "auction.pass":
+		return r.handleAuctionPass(ctx, session, envelope)
 	default:
 		return []OutboundEnvelope{outboundError(envelope.RequestID, "unknown_message_type", "unknown message type")}, ErrUnknownMessageType
 	}
@@ -193,12 +196,41 @@ func (r *MessageRouter) handleAuctionBid(ctx context.Context, session *ClientSes
 		return responses, nil
 	}
 
-	return []OutboundEnvelope{
-		outbound(envelope.RequestID, "auction.bid_accepted", map[string]any{
-			"playerId": session.PlayerID,
+	return r.auctionAcceptedResponses(envelope.RequestID, "auction.bid_accepted", session.PlayerID, result), nil
+}
+
+func (r *MessageRouter) handleAuctionPass(ctx context.Context, session *ClientSession, envelope Envelope) ([]OutboundEnvelope, error) {
+	if err := r.requireRoom(session); err != nil {
+		return []OutboundEnvelope{outboundError(envelope.RequestID, "room_required", "join a room before passing")}, err
+	}
+
+	result, err := r.rooms.PassBid(ctx, session.RoomID, session.PlayerID)
+	if err != nil {
+		responses := []OutboundEnvelope{
+			outbound(envelope.RequestID, "auction.bid_rejected", ErrorPayload{Code: "pass_rejected", Message: err.Error()}),
+		}
+		if result.Snapshot.RoomID != "" {
+			responses = append(responses, outbound(envelope.RequestID, "room.snapshot", result.Snapshot))
+		}
+
+		return responses, nil
+	}
+
+	return r.auctionAcceptedResponses(envelope.RequestID, "auction.pass_accepted", session.PlayerID, result), nil
+}
+
+func (r *MessageRouter) auctionAcceptedResponses(requestID string, acceptedType string, playerID string, result application.PlaceBidResult) []OutboundEnvelope {
+	responses := []OutboundEnvelope{
+		outbound(requestID, acceptedType, map[string]any{
+			"playerId": playerID,
 		}),
-		outbound(envelope.RequestID, "room.snapshot", result.Snapshot),
-	}, nil
+	}
+	if result.RoundResult != nil {
+		responses = append(responses, outbound(requestID, "auction.round_settled", *result.RoundResult))
+	}
+	responses = append(responses, outbound(requestID, "room.snapshot", result.Snapshot))
+
+	return responses
 }
 
 func (r *MessageRouter) requireGuest(session *ClientSession) (application.GuestSession, error) {

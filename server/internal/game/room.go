@@ -203,13 +203,9 @@ func (r *Room) StartNextRound(lot Lot) error {
 }
 
 func (r *Room) PlaceBid(playerID string, amount int) error {
-	if r.phase != RoomPhaseAuction && r.phase != RoomPhaseRebid {
-		return ErrInvalidPhase
-	}
-
-	player, ok := r.players[playerID]
-	if !ok {
-		return ErrPlayerNotInRoom
+	player, err := r.playerForAuctionAction(playerID)
+	if err != nil {
+		return err
 	}
 	if amount < r.rules.MinBid {
 		return ErrBidTooLow
@@ -218,9 +214,6 @@ func (r *Room) PlaceBid(playerID string, amount int) error {
 		return ErrBidExceedsCoins
 	}
 	if r.phase == RoomPhaseRebid {
-		if _, ok := r.rebidParticipants[playerID]; !ok {
-			return ErrPlayerNotInRebid
-		}
 		if amount <= r.rebidFloors[playerID] {
 			return ErrRebidTooLow
 		}
@@ -231,6 +224,29 @@ func (r *Room) PlaceBid(playerID string, amount int) error {
 		Amount:   amount,
 	}
 	return nil
+}
+
+func (r *Room) Pass(playerID string) error {
+	if _, err := r.playerForAuctionAction(playerID); err != nil {
+		return err
+	}
+
+	r.bids[playerID] = Bid{
+		PlayerID: playerID,
+		Passed:   true,
+	}
+	return nil
+}
+
+func (r *Room) AllPlayersActed() bool {
+	switch r.phase {
+	case RoomPhaseAuction:
+		return len(r.bids) == len(r.players)
+	case RoomPhaseRebid:
+		return len(r.bids) == len(r.rebidParticipants)
+	default:
+		return false
+	}
 }
 
 func (r *Room) SettleRound() (RoundResult, error) {
@@ -246,6 +262,9 @@ func (r *Room) SettleRound() (RoundResult, error) {
 	}
 
 	highest, tiedPlayerIDs := r.highestBidders()
+	if len(tiedPlayerIDs) == 0 {
+		return r.finishVoidRound(), nil
+	}
 	if len(tiedPlayerIDs) > 1 {
 		if r.shouldVoidTiedRound() {
 			return r.finishVoidRoundWithTies(tiedPlayerIDs, highest), nil
@@ -340,6 +359,9 @@ func (r *Room) highestBidders() (int, []string) {
 	highest := 0
 	tiedPlayerIDs := make([]string, 0)
 	for _, bid := range r.bids {
+		if bid.Passed {
+			continue
+		}
 		if bid.Amount > highest {
 			highest = bid.Amount
 			tiedPlayerIDs = tiedPlayerIDs[:0]
@@ -352,6 +374,24 @@ func (r *Room) highestBidders() (int, []string) {
 	}
 	sort.Strings(tiedPlayerIDs)
 	return highest, tiedPlayerIDs
+}
+
+func (r *Room) playerForAuctionAction(playerID string) (Player, error) {
+	if r.phase != RoomPhaseAuction && r.phase != RoomPhaseRebid {
+		return Player{}, ErrInvalidPhase
+	}
+
+	player, ok := r.players[playerID]
+	if !ok {
+		return Player{}, ErrPlayerNotInRoom
+	}
+	if r.phase == RoomPhaseRebid {
+		if _, ok := r.rebidParticipants[playerID]; !ok {
+			return Player{}, ErrPlayerNotInRebid
+		}
+	}
+
+	return player, nil
 }
 
 func (r *Room) shouldVoidTiedRound() bool {

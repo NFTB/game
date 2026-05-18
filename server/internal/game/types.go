@@ -90,6 +90,7 @@ type Lot struct {
 type Bid struct {
 	PlayerID string `json:"playerId"`
 	Amount   int    `json:"amount"`
+	Passed   bool   `json:"passed"`
 }
 
 type PlayerSnapshot struct {

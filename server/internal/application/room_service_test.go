@@ -56,22 +56,54 @@ func TestRoomServicePlacesBidAndSettlesRound(t *testing.T) {
 	ctx := context.Background()
 	roomID, alice, bob := readyStartedRoom(t, ctx, service)
 
-	if result, err := service.PlaceBid(ctx, roomID, alice.PlayerID, 100); err != nil || !result.Accepted {
-		t.Fatalf("alice bid result = %+v, %v; want accepted", result, err)
+	first, err := service.PlaceBid(ctx, roomID, alice.PlayerID, 100)
+	if err != nil || !first.Accepted {
+		t.Fatalf("alice bid result = %+v, %v; want accepted", first, err)
 	}
-	if result, err := service.PlaceBid(ctx, roomID, bob.PlayerID, 200); err != nil || !result.Accepted {
-		t.Fatalf("bob bid result = %+v, %v; want accepted", result, err)
+	if first.RoundResult != nil {
+		t.Fatalf("first bid round result = %+v, want nil", first.RoundResult)
 	}
 
-	settled, err := service.SettleRound(ctx, roomID, alice.PlayerID)
+	second, err := service.PlaceBid(ctx, roomID, bob.PlayerID, 200)
+	if err != nil || !second.Accepted {
+		t.Fatalf("bob bid result = %+v, %v; want accepted", second, err)
+	}
+	if second.RoundResult == nil {
+		t.Fatal("second bid should settle the round")
+	}
+	if second.RoundResult.WinnerID != bob.PlayerID {
+		t.Fatalf("winner = %s, want %s", second.RoundResult.WinnerID, bob.PlayerID)
+	}
+	if second.Snapshot.Phase != game.RoomPhaseSettlement {
+		t.Fatalf("phase = %s, want %s", second.Snapshot.Phase, game.RoomPhaseSettlement)
+	}
+}
+
+func TestRoomServiceAutoSettlesWhenAllPlayersAct(t *testing.T) {
+	service := newTestRoomService(t)
+	ctx := context.Background()
+	roomID, alice, bob := readyStartedRoom(t, ctx, service)
+
+	first, err := service.PlaceBid(ctx, roomID, alice.PlayerID, 100)
 	if err != nil {
-		t.Fatalf("settle round: %v", err)
+		t.Fatalf("alice bid: %v", err)
 	}
-	if settled.Result.WinnerID != bob.PlayerID {
-		t.Fatalf("winner = %s, want %s", settled.Result.WinnerID, bob.PlayerID)
+	if first.RoundResult != nil {
+		t.Fatalf("first bid round result = %+v, want nil", first.RoundResult)
 	}
-	if settled.Snapshot.Phase != game.RoomPhaseSettlement {
-		t.Fatalf("phase = %s, want %s", settled.Snapshot.Phase, game.RoomPhaseSettlement)
+
+	second, err := service.PassBid(ctx, roomID, bob.PlayerID)
+	if err != nil {
+		t.Fatalf("bob pass: %v", err)
+	}
+	if second.RoundResult == nil {
+		t.Fatal("second action should settle the round")
+	}
+	if second.RoundResult.WinnerID != alice.PlayerID {
+		t.Fatalf("winner = %s, want %s", second.RoundResult.WinnerID, alice.PlayerID)
+	}
+	if second.Snapshot.Phase != game.RoomPhaseSettlement {
+		t.Fatalf("phase = %s, want %s", second.Snapshot.Phase, game.RoomPhaseSettlement)
 	}
 }
 

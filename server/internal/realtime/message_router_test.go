@@ -66,6 +66,30 @@ func TestMessageRouterRejectsBidWithoutRoom(t *testing.T) {
 	}
 }
 
+func TestMessageRouterEmitsRoundSettledWhenAllPlayersAct(t *testing.T) {
+	router := newTestRouter(t)
+	ctx := context.Background()
+
+	alice := &ClientSession{}
+	bob := &ClientSession{}
+	route(t, router, ctx, alice, "auth.guest", "auth_alice", map[string]any{"displayName": "Alice"})
+	route(t, router, ctx, bob, "auth.guest", "auth_bob", map[string]any{"displayName": "Bob"})
+	route(t, router, ctx, alice, "room.create", "create", map[string]any{})
+	route(t, router, ctx, bob, "room.join", "join", map[string]any{"roomId": alice.RoomID})
+	route(t, router, ctx, alice, "room.ready", "ready_alice", map[string]any{"ready": true})
+	route(t, router, ctx, bob, "room.ready", "ready_bob", map[string]any{"ready": true})
+
+	route(t, router, ctx, alice, "auction.bid", "bid", map[string]any{"amount": 100})
+	responses := route(t, router, ctx, bob, "auction.pass", "pass", map[string]any{})
+
+	if len(responses) != 3 {
+		t.Fatalf("response count = %d, want 3: %+v", len(responses), responses)
+	}
+	if responses[0].Type != "auction.pass_accepted" || responses[1].Type != "auction.round_settled" || responses[2].Type != "room.snapshot" {
+		t.Fatalf("responses = %+v, want pass accepted, round settled, snapshot", responses)
+	}
+}
+
 func newTestRouter(t *testing.T) *MessageRouter {
 	t.Helper()
 

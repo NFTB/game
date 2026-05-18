@@ -121,6 +121,47 @@ func TestSettleRoundAwardsHighestBidder(t *testing.T) {
 	}
 }
 
+func TestPassAllowsPlayerToSkipBid(t *testing.T) {
+	room := startedRoom(t)
+
+	if err := room.PlaceBid("player_1", 30); err != nil {
+		t.Fatalf("bid player 1: %v", err)
+	}
+	if err := room.Pass("player_2"); err != nil {
+		t.Fatalf("pass player 2: %v", err)
+	}
+	if !room.AllPlayersActed() {
+		t.Fatal("all players should have acted after bid and pass")
+	}
+
+	result, err := room.SettleRound()
+	if err != nil {
+		t.Fatalf("settle round: %v", err)
+	}
+	if result.Outcome != RoundOutcomeAwarded || result.WinnerID != "player_1" {
+		t.Fatalf("unexpected result: %+v", result)
+	}
+}
+
+func TestAllPassesVoidRound(t *testing.T) {
+	room := startedRoom(t)
+
+	if err := room.Pass("player_1"); err != nil {
+		t.Fatalf("pass player 1: %v", err)
+	}
+	if err := room.Pass("player_2"); err != nil {
+		t.Fatalf("pass player 2: %v", err)
+	}
+
+	result, err := room.SettleRound()
+	if err != nil {
+		t.Fatalf("settle round: %v", err)
+	}
+	if result.Outcome != RoundOutcomeVoid {
+		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
+	}
+}
+
 func TestTieEntersRebidAndThenAwardsWinner(t *testing.T) {
 	room := startedRoomWithPlayers(t, []Player{
 		{ID: "player_1", DisplayName: "A", Coins: 100},

@@ -33,8 +33,9 @@ type CreateRoomResult struct {
 }
 
 type PlaceBidResult struct {
-	Accepted bool
-	Snapshot game.RoomSnapshot
+	Accepted    bool
+	RoundResult *game.RoundResult
+	Snapshot    game.RoomSnapshot
 }
 
 type SettleRoundResult struct {

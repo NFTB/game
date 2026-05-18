@@ -171,9 +171,41 @@ func (s *RoomService) PlaceBid(_ context.Context, roomID string, playerID string
 		}, err
 	}
 
+	return s.acceptedAuctionAction(room, playerID)
+}
+
+func (s *RoomService) PassBid(_ context.Context, roomID string, playerID string) (PlaceBidResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	room, err := s.room(roomID)
+	if err != nil {
+		return PlaceBidResult{}, err
+	}
+	if err := room.Pass(playerID); err != nil {
+		return PlaceBidResult{
+			Accepted: false,
+			Snapshot: room.SnapshotFor(playerID),
+		}, err
+	}
+
+	return s.acceptedAuctionAction(room, playerID)
+}
+
+func (s *RoomService) acceptedAuctionAction(room *game.Room, playerID string) (PlaceBidResult, error) {
+	var roundResult *game.RoundResult
+	if room.AllPlayersActed() {
+		result, err := room.SettleRound()
+		if err != nil {
+			return PlaceBidResult{}, err
+		}
+		roundResult = &result
+	}
+
 	return PlaceBidResult{
-		Accepted: true,
-		Snapshot: room.SnapshotFor(playerID),
+		Accepted:    true,
+		RoundResult: roundResult,
+		Snapshot:    room.SnapshotFor(playerID),
 	}, nil
 }
 

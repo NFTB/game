@@ -42,6 +42,10 @@
       "payload": {
         "amount": "int"
       }
+    },
+    {
+      "type": "auction.pass",
+      "payload": {}
     }
   ],
   "serverToClient": [
@@ -67,6 +71,12 @@
     },
     {
       "type": "auction.bid_accepted",
+      "payload": {
+        "playerId": "string"
+      }
+    },
+    {
+      "type": "auction.pass_accepted",
       "payload": {
         "playerId": "string"
       }
