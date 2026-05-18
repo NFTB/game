@@ -110,25 +110,25 @@ func (s *RoomService) JoinRoom(_ context.Context, roomID string, guest GuestSess
 	return room.SnapshotFor(guest.PlayerID), nil
 }
 
-func (s *RoomService) LeaveRoom(_ context.Context, playerID string) error {
+func (s *RoomService) LeaveRoom(_ context.Context, playerID string) (game.RoomSnapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	roomID, ok := s.playerRooms[playerID]
 	if !ok {
-		return ErrPlayerHasNoRoom
+		return game.RoomSnapshot{}, ErrPlayerHasNoRoom
 	}
 
 	room, err := s.room(roomID)
 	if err != nil {
-		return err
+		return game.RoomSnapshot{}, err
 	}
 	if err := room.Leave(playerID); err != nil {
-		return err
+		return game.RoomSnapshot{}, err
 	}
 
 	delete(s.playerRooms, playerID)
-	return nil
+	return room.SnapshotFor(playerID), nil
 }
 
 func (s *RoomService) SetReady(ctx context.Context, roomID string, playerID string, ready bool) (game.RoomSnapshot, error) {

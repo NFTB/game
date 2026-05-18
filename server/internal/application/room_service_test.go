@@ -137,14 +137,18 @@ func TestRoomServiceLeaveRoomRemovesPlayerMapping(t *testing.T) {
 	if _, err := service.JoinRoom(ctx, created.RoomID, bob); err != nil {
 		t.Fatalf("join bob: %v", err)
 	}
-	if err := service.LeaveRoom(ctx, bob.PlayerID); err != nil {
+	snapshot, err := service.LeaveRoom(ctx, bob.PlayerID)
+	if err != nil {
 		t.Fatalf("leave bob: %v", err)
+	}
+	if got := len(snapshot.Players); got != 1 {
+		t.Fatalf("leave snapshot player count = %d, want 1", got)
 	}
 	if _, err := service.RoomIDForPlayer(ctx, bob.PlayerID); !errors.Is(err, ErrPlayerHasNoRoom) {
 		t.Fatalf("room id for bob error = %v, want %v", err, ErrPlayerHasNoRoom)
 	}
 
-	snapshot, err := service.Snapshot(ctx, created.RoomID, alice.PlayerID)
+	snapshot, err = service.Snapshot(ctx, created.RoomID, alice.PlayerID)
 	if err != nil {
 		t.Fatalf("snapshot: %v", err)
 	}

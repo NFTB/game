@@ -118,6 +118,26 @@ func TestMessageRouterAdvancesNextRound(t *testing.T) {
 	}
 }
 
+func TestMessageRouterLeaveRoomReturnsSnapshotAndMarksSessionForClear(t *testing.T) {
+	router := newTestRouter(t)
+	ctx := context.Background()
+
+	alice := &ClientSession{}
+	bob := &ClientSession{}
+	route(t, router, ctx, alice, "auth.guest", "auth_alice", map[string]any{"displayName": "Alice"})
+	route(t, router, ctx, bob, "auth.guest", "auth_bob", map[string]any{"displayName": "Bob"})
+	route(t, router, ctx, alice, "room.create", "create", map[string]any{})
+	route(t, router, ctx, bob, "room.join", "join", map[string]any{"roomId": alice.RoomID})
+
+	responses := route(t, router, ctx, bob, "room.leave", "leave", map[string]any{})
+	if len(responses) != 2 || responses[0].Type != "room.left" || responses[1].Type != "room.snapshot" {
+		t.Fatalf("responses = %+v, want room.left and room.snapshot", responses)
+	}
+	if !bob.PendingRoomClear {
+		t.Fatal("session should be marked for room clear after dispatch")
+	}
+}
+
 func newTestRouter(t *testing.T) *MessageRouter {
 	t.Helper()
 

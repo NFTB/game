@@ -20,7 +20,7 @@ type RoomCommands interface {
 	RegisterGuest(ctx context.Context, displayName string) application.GuestSession
 	CreateRoom(ctx context.Context, guest application.GuestSession) (application.CreateRoomResult, error)
 	JoinRoom(ctx context.Context, roomID string, guest application.GuestSession) (game.RoomSnapshot, error)
-	LeaveRoom(ctx context.Context, playerID string) error
+	LeaveRoom(ctx context.Context, playerID string) (game.RoomSnapshot, error)
 	SetReady(ctx context.Context, roomID string, playerID string, ready bool) (game.RoomSnapshot, error)
 	PlaceBid(ctx context.Context, roomID string, playerID string, amount int) (application.PlaceBidResult, error)
 	PassBid(ctx context.Context, roomID string, playerID string) (application.PlaceBidResult, error)
@@ -30,10 +30,11 @@ type RoomCommands interface {
 }
 
 type ClientSession struct {
-	PlayerID    string
-	DisplayName string
-	Coins       int
-	RoomID      string
+	PlayerID         string
+	DisplayName      string
+	Coins            int
+	RoomID           string
+	PendingRoomClear bool
 }
 
 type MessageRouter struct {
@@ -143,13 +144,15 @@ func (r *MessageRouter) handleRoomLeave(ctx context.Context, session *ClientSess
 		return []OutboundEnvelope{outboundError(envelope.RequestID, "unauthenticated", "authenticate before leaving a room")}, ErrUnauthenticated
 	}
 
-	if err := r.rooms.LeaveRoom(ctx, session.PlayerID); err != nil {
+	snapshot, err := r.rooms.LeaveRoom(ctx, session.PlayerID)
+	if err != nil {
 		return []OutboundEnvelope{outboundError(envelope.RequestID, "room_leave_failed", err.Error())}, err
 	}
 
-	session.RoomID = ""
+	session.PendingRoomClear = true
 	return []OutboundEnvelope{
 		outbound(envelope.RequestID, "room.left", map[string]any{}),
+		outbound(envelope.RequestID, "room.snapshot", snapshot),
 	}, nil
 }
 

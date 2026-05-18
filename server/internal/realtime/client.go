@@ -121,6 +121,12 @@ func (h *Hub) dispatch(sender *Client, responses []OutboundEnvelope) {
 
 		h.send(sender, response)
 	}
+
+	if sender.session.PendingRoomClear {
+		sender.session.RoomID = ""
+		sender.session.PendingRoomClear = false
+		h.refreshRoom(sender)
+	}
 }
 
 func isRoomBroadcast(messageType string) bool {
