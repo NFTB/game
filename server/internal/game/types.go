@@ -62,65 +62,65 @@ func DefaultRoomRules() RoomRules {
 }
 
 type Player struct {
-	ID          string
-	DisplayName string
-	Coins       int
-	Ready       bool
-	WonLotIDs   []string
+	ID          string   `json:"playerId"`
+	DisplayName string   `json:"displayName"`
+	Coins       int      `json:"coins"`
+	Ready       bool     `json:"ready"`
+	WonLotIDs   []string `json:"wonLotIds"`
 }
 
 type Item struct {
-	ID                string
-	DisplayName       string
-	Rarity            string
-	Type              string
-	EstimatedMinValue int
-	EstimatedMaxValue int
-	TrueValue         int
-	SellValue         int
+	ID                string `json:"itemId"`
+	DisplayName       string `json:"displayName"`
+	Rarity            string `json:"rarity"`
+	Type              string `json:"type"`
+	EstimatedMinValue int    `json:"estimatedMinValue"`
+	EstimatedMaxValue int    `json:"estimatedMaxValue"`
+	TrueValue         int    `json:"trueValue,omitempty"`
+	SellValue         int    `json:"sellValue"`
 }
 
 type Lot struct {
-	ID          string
-	DisplayName string
-	TrueValue   int
-	Items       []Item
+	ID          string `json:"lotId"`
+	DisplayName string `json:"displayName"`
+	TrueValue   int    `json:"trueValue,omitempty"`
+	Items       []Item `json:"items,omitempty"`
 }
 
 type Bid struct {
-	PlayerID string
-	Amount   int
+	PlayerID string `json:"playerId"`
+	Amount   int    `json:"amount"`
 }
 
 type PlayerSnapshot struct {
-	ID          string
-	DisplayName string
-	Coins       int
-	Ready       bool
-	WonLotIDs   []string
+	ID          string   `json:"playerId"`
+	DisplayName string   `json:"displayName"`
+	Coins       int      `json:"coins"`
+	Ready       bool     `json:"ready"`
+	WonLotIDs   []string `json:"wonLotIds"`
 }
 
 type BidSnapshot struct {
-	PlayerID string
-	HasBid   bool
+	PlayerID string `json:"playerId"`
+	HasBid   bool   `json:"hasBid"`
 }
 
 type RoomSnapshot struct {
-	RoomID           string
-	Phase            RoomPhase
-	RoundNumber      int
-	RoundTimeSeconds int
-	Players          []PlayerSnapshot
-	CurrentLot       *Lot
-	Bids             []BidSnapshot
-	RebidPlayerIDs   []string
+	RoomID           string           `json:"roomId"`
+	Phase            RoomPhase        `json:"phase"`
+	RoundNumber      int              `json:"roundNumber"`
+	RoundTimeSeconds int              `json:"roundTimeSeconds"`
+	Players          []PlayerSnapshot `json:"players"`
+	CurrentLot       *Lot             `json:"currentLot,omitempty"`
+	Bids             []BidSnapshot    `json:"bids"`
+	RebidPlayerIDs   []string         `json:"rebidPlayerIds,omitempty"`
 }
 
 type RoundResult struct {
-	RoundNumber   int
-	Outcome       RoundOutcome
-	WinnerID      string
-	WinningBid    int
-	Lot           Lot
-	TiedPlayerIDs []string
+	RoundNumber   int          `json:"roundNumber"`
+	Outcome       RoundOutcome `json:"outcome"`
+	WinnerID      string       `json:"winnerId,omitempty"`
+	WinningBid    int          `json:"winningBid,omitempty"`
+	Lot           Lot          `json:"lot"`
+	TiedPlayerIDs []string     `json:"tiedPlayerIds,omitempty"`
 }
