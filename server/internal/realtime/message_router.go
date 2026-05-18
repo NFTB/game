@@ -25,6 +25,7 @@ type RoomCommands interface {
 	PlaceBid(ctx context.Context, roomID string, playerID string, amount int) (application.PlaceBidResult, error)
 	PassBid(ctx context.Context, roomID string, playerID string) (application.PlaceBidResult, error)
 	SettleRound(ctx context.Context, roomID string, playerID string) (application.SettleRoundResult, error)
+	AdvanceAfterSettlement(ctx context.Context, roomID string, playerID string) (application.AdvanceRoundResult, error)
 	RoomIDForPlayer(ctx context.Context, playerID string) (string, error)
 }
 
@@ -68,6 +69,8 @@ func (r *MessageRouter) Route(ctx context.Context, session *ClientSession, data 
 		return r.handleAuctionBid(ctx, session, envelope)
 	case "auction.pass":
 		return r.handleAuctionPass(ctx, session, envelope)
+	case "auction.next_round":
+		return r.handleAuctionNextRound(ctx, session, envelope)
 	default:
 		return []OutboundEnvelope{outboundError(envelope.RequestID, "unknown_message_type", "unknown message type")}, ErrUnknownMessageType
 	}
@@ -231,6 +234,40 @@ func (r *MessageRouter) auctionAcceptedResponses(requestID string, acceptedType 
 	responses = append(responses, outbound(requestID, "room.snapshot", result.Snapshot))
 
 	return responses
+}
+
+func (r *MessageRouter) handleAuctionNextRound(ctx context.Context, session *ClientSession, envelope Envelope) ([]OutboundEnvelope, error) {
+	if err := r.requireRoom(session); err != nil {
+		return []OutboundEnvelope{outboundError(envelope.RequestID, "room_required", "join a room before advancing")}, err
+	}
+
+	result, err := r.rooms.AdvanceAfterSettlement(ctx, session.RoomID, session.PlayerID)
+	if err != nil {
+		return []OutboundEnvelope{outboundError(envelope.RequestID, "advance_round_failed", err.Error())}, err
+	}
+
+	responses := make([]OutboundEnvelope, 0, 2)
+	if result.Finished {
+		responses = append(responses, outbound(envelope.RequestID, "auction.finished", map[string]any{
+			"rankings": rankings(result.Snapshot),
+		}))
+	}
+	responses = append(responses, outbound(envelope.RequestID, "room.snapshot", result.Snapshot))
+
+	return responses, nil
+}
+
+func rankings(snapshot game.RoomSnapshot) []map[string]any {
+	rankings := make([]map[string]any, 0, len(snapshot.Players))
+	for _, player := range snapshot.Players {
+		rankings = append(rankings, map[string]any{
+			"playerId":             player.ID,
+			"coins":                player.Coins,
+			"totalCollectionValue": 0,
+		})
+	}
+
+	return rankings
 }
 
 func (r *MessageRouter) requireGuest(session *ClientSession) (application.GuestSession, error) {

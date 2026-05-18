@@ -90,6 +90,34 @@ func TestMessageRouterEmitsRoundSettledWhenAllPlayersAct(t *testing.T) {
 	}
 }
 
+func TestMessageRouterAdvancesNextRound(t *testing.T) {
+	router := newTestRouter(t)
+	ctx := context.Background()
+
+	alice := &ClientSession{}
+	bob := &ClientSession{}
+	route(t, router, ctx, alice, "auth.guest", "auth_alice", map[string]any{"displayName": "Alice"})
+	route(t, router, ctx, bob, "auth.guest", "auth_bob", map[string]any{"displayName": "Bob"})
+	route(t, router, ctx, alice, "room.create", "create", map[string]any{})
+	route(t, router, ctx, bob, "room.join", "join", map[string]any{"roomId": alice.RoomID})
+	route(t, router, ctx, alice, "room.ready", "ready_alice", map[string]any{"ready": true})
+	route(t, router, ctx, bob, "room.ready", "ready_bob", map[string]any{"ready": true})
+	route(t, router, ctx, alice, "auction.bid", "bid", map[string]any{"amount": 100})
+	route(t, router, ctx, bob, "auction.pass", "pass", map[string]any{})
+
+	responses := route(t, router, ctx, alice, "auction.next_round", "next", map[string]any{})
+	if len(responses) != 1 || responses[0].Type != "room.snapshot" {
+		t.Fatalf("responses = %+v, want room.snapshot", responses)
+	}
+	snapshot, ok := responses[0].Payload.(game.RoomSnapshot)
+	if !ok {
+		t.Fatalf("payload type = %T, want game.RoomSnapshot", responses[0].Payload)
+	}
+	if snapshot.Phase != game.RoomPhaseAuction || snapshot.RoundNumber != 2 {
+		t.Fatalf("snapshot = %+v, want auction round 2", snapshot)
+	}
+}
+
 func newTestRouter(t *testing.T) *MessageRouter {
 	t.Helper()
 

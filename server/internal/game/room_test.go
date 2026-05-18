@@ -251,6 +251,29 @@ func TestTieVoidsAfterMaxRebidRounds(t *testing.T) {
 	}
 }
 
+func TestFinishMovesSettledFinalRoundToFinished(t *testing.T) {
+	rules := DefaultRoomRules()
+	rules.RoundCount = 1
+	room := startedRoomWithRules(t, rules)
+
+	if err := room.PlaceBid("player_1", 10); err != nil {
+		t.Fatalf("bid player 1: %v", err)
+	}
+	if err := room.Pass("player_2"); err != nil {
+		t.Fatalf("pass player 2: %v", err)
+	}
+	if _, err := room.SettleRound(); err != nil {
+		t.Fatalf("settle round: %v", err)
+	}
+
+	if err := room.Finish(); err != nil {
+		t.Fatalf("finish room: %v", err)
+	}
+	if got := room.Phase(); got != RoomPhaseFinished {
+		t.Fatalf("phase = %s, want %s", got, RoomPhaseFinished)
+	}
+}
+
 func startedRoom(t *testing.T) *Room {
 	t.Helper()
 	return startedRoomWithRules(t, DefaultRoomRules())

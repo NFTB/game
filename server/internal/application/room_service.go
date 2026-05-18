@@ -249,6 +249,38 @@ func (s *RoomService) StartNextRound(ctx context.Context, roomID string, playerI
 	return room.SnapshotFor(playerID), nil
 }
 
+func (s *RoomService) AdvanceAfterSettlement(ctx context.Context, roomID string, playerID string) (AdvanceRoundResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	room, err := s.room(roomID)
+	if err != nil {
+		return AdvanceRoundResult{}, err
+	}
+
+	if room.RoundNumber() >= s.rules.RoundCount {
+		if err := room.Finish(); err != nil {
+			return AdvanceRoundResult{}, err
+		}
+		return AdvanceRoundResult{
+			Finished: true,
+			Snapshot: room.SnapshotFor(playerID),
+		}, nil
+	}
+
+	lot, err := s.lotProvider.NextLot(ctx, room.SnapshotFor(playerID))
+	if err != nil {
+		return AdvanceRoundResult{}, err
+	}
+	if err := room.StartNextRound(lot); err != nil {
+		return AdvanceRoundResult{}, err
+	}
+
+	return AdvanceRoundResult{
+		Snapshot: room.SnapshotFor(playerID),
+	}, nil
+}
+
 func (s *RoomService) Snapshot(_ context.Context, roomID string, playerID string) (game.RoomSnapshot, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

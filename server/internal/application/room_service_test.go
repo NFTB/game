@@ -153,6 +153,62 @@ func TestRoomServiceLeaveRoomRemovesPlayerMapping(t *testing.T) {
 	}
 }
 
+func TestRoomServiceAdvanceAfterSettlementStartsNextRound(t *testing.T) {
+	service := newTestRoomService(t)
+	ctx := context.Background()
+	roomID, alice, bob := readyStartedRoom(t, ctx, service)
+
+	if _, err := service.PlaceBid(ctx, roomID, alice.PlayerID, 100); err != nil {
+		t.Fatalf("alice bid: %v", err)
+	}
+	if _, err := service.PassBid(ctx, roomID, bob.PlayerID); err != nil {
+		t.Fatalf("bob pass: %v", err)
+	}
+
+	advanced, err := service.AdvanceAfterSettlement(ctx, roomID, alice.PlayerID)
+	if err != nil {
+		t.Fatalf("advance after settlement: %v", err)
+	}
+	if advanced.Finished {
+		t.Fatal("room should not be finished after first round")
+	}
+	if advanced.Snapshot.Phase != game.RoomPhaseAuction || advanced.Snapshot.RoundNumber != 2 {
+		t.Fatalf("snapshot = %+v, want auction round 2", advanced.Snapshot)
+	}
+}
+
+func TestRoomServiceAdvanceAfterFinalSettlementFinishesMatch(t *testing.T) {
+	rules := game.DefaultRoomRules()
+	rules.RoundCount = 1
+	rules.InitialGold = 1000
+	service, err := NewRoomService(rules, NewSequentialIDGenerator(), NewStaticLotProvider([]game.Lot{
+		{ID: "lot_1", DisplayName: "测试仓库", TrueValue: 500},
+	}))
+	if err != nil {
+		t.Fatalf("new room service: %v", err)
+	}
+	ctx := context.Background()
+	roomID, alice, bob := readyStartedRoom(t, ctx, service)
+
+	if _, err := service.PlaceBid(ctx, roomID, alice.PlayerID, 100); err != nil {
+		t.Fatalf("alice bid: %v", err)
+	}
+	if _, err := service.PassBid(ctx, roomID, bob.PlayerID); err != nil {
+		t.Fatalf("bob pass: %v", err)
+	}
+
+	advanced, err := service.AdvanceAfterSettlement(ctx, roomID, alice.PlayerID)
+	if err != nil {
+		t.Fatalf("advance after final settlement: %v", err)
+	}
+	if !advanced.Finished {
+		t.Fatal("room should be finished after final round")
+	}
+	if advanced.Snapshot.Phase != game.RoomPhaseFinished {
+		t.Fatalf("phase = %s, want %s", advanced.Snapshot.Phase, game.RoomPhaseFinished)
+	}
+}
+
 func newTestRoomService(t *testing.T) *RoomService {
 	t.Helper()
 

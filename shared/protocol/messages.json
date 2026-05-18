@@ -46,6 +46,10 @@
     {
       "type": "auction.pass",
       "payload": {}
+    },
+    {
+      "type": "auction.next_round",
+      "payload": {}
     }
   ],
   "serverToClient": [

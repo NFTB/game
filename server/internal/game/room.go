@@ -202,6 +202,18 @@ func (r *Room) StartNextRound(lot Lot) error {
 	return nil
 }
 
+func (r *Room) Finish() error {
+	if r.phase != RoomPhaseSettlement {
+		return ErrInvalidPhase
+	}
+	if r.roundNumber < r.rules.RoundCount {
+		return ErrRoundsRemaining
+	}
+
+	r.phase = RoomPhaseFinished
+	return nil
+}
+
 func (r *Room) PlaceBid(playerID string, amount int) error {
 	player, err := r.playerForAuctionAction(playerID)
 	if err != nil {

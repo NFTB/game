@@ -37,6 +37,7 @@ var (
 	ErrPlayerNotInRebid    = errors.New("player is not eligible for rebid")
 	ErrRebidTooLow         = errors.New("rebid must exceed previous bid")
 	ErrMatchFinished       = errors.New("match is finished")
+	ErrRoundsRemaining     = errors.New("rounds are remaining")
 )
 
 type RoomRules struct {
