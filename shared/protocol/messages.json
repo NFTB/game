@@ -1,24 +1,144 @@
 {
   "version": 1,
+  "envelope": {
+    "encoding": "json",
+    "required": ["type", "payload"],
+    "fields": {
+      "type": "string",
+      "requestId": "string optional; client generated id for matching async replies",
+      "payload": "object",
+      "sentAt": "int64 optional; unix milliseconds"
+    }
+  },
   "clientToServer": [
-    "auth.guest",
-    "room.create",
-    "room.join",
-    "room.leave",
-    "room.ready",
-    "auction.bid"
+    {
+      "type": "auth.guest",
+      "payload": {
+        "displayName": "string"
+      }
+    },
+    {
+      "type": "room.create",
+      "payload": {}
+    },
+    {
+      "type": "room.join",
+      "payload": {
+        "roomId": "string"
+      }
+    },
+    {
+      "type": "room.leave",
+      "payload": {}
+    },
+    {
+      "type": "room.ready",
+      "payload": {
+        "ready": "bool"
+      }
+    },
+    {
+      "type": "auction.bid",
+      "payload": {
+        "amount": "int"
+      }
+    }
   ],
   "serverToClient": [
-    "auth.accepted",
-    "room.snapshot",
-    "room.player_joined",
-    "room.player_left",
-    "auction.started",
-    "auction.round_started",
-    "auction.bid_accepted",
-    "auction.bid_rejected",
-    "auction.round_settled",
-    "auction.finished",
-    "error"
-  ]
+    {
+      "type": "auth.accepted",
+      "payload": {
+        "playerId": "string",
+        "displayName": "string"
+      }
+    },
+    {
+      "type": "room.snapshot",
+      "payload": {
+        "roomId": "string",
+        "phase": "lobby | auction | rebid | settlement | finished",
+        "roundNumber": "int",
+        "roundTimeSeconds": "int",
+        "players": "PlayerSnapshot[]",
+        "currentLot": "Lot optional",
+        "bids": "BidSnapshot[]; amount hidden for blind bidding",
+        "rebidPlayerIds": "string[] optional"
+      }
+    },
+    {
+      "type": "auction.bid_accepted",
+      "payload": {
+        "playerId": "string"
+      }
+    },
+    {
+      "type": "auction.bid_rejected",
+      "payload": {
+        "code": "string",
+        "message": "string"
+      }
+    },
+    {
+      "type": "auction.round_settled",
+      "payload": {
+        "roundNumber": "int",
+        "outcome": "awarded | needs_rebid | void",
+        "winnerId": "string optional",
+        "winningBid": "int optional",
+        "tiedPlayerIds": "string[] optional",
+        "lot": "Lot"
+      }
+    },
+    {
+      "type": "auction.finished",
+      "payload": {
+        "rankings": "PlayerRanking[]"
+      }
+    },
+    {
+      "type": "room.left",
+      "payload": {}
+    },
+    {
+      "type": "error",
+      "payload": {
+        "code": "string",
+        "message": "string"
+      }
+    }
+  ],
+  "models": {
+    "PlayerSnapshot": {
+      "playerId": "string",
+      "displayName": "string",
+      "coins": "int",
+      "ready": "bool",
+      "wonLotIds": "string[]"
+    },
+    "BidSnapshot": {
+      "playerId": "string",
+      "hasBid": "bool"
+    },
+    "Lot": {
+      "lotId": "string",
+      "displayName": "string",
+      "trueValue": "int; server may omit before settlement",
+      "items": "Item[] optional"
+    },
+    "Item": {
+      "itemId": "string",
+      "displayName": "string",
+      "rarity": "string",
+      "type": "string",
+      "estimatedMinValue": "int",
+      "estimatedMaxValue": "int",
+      "trueValue": "int; server may omit before settlement",
+      "sellValue": "int"
+    },
+    "PlayerRanking": {
+      "playerId": "string",
+      "coins": "int",
+      "totalCollectionValue": "int"
+    }
+  }
 }

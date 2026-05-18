@@ -2,10 +2,17 @@ package realtime
 
 import "net/http"
 
-type Hub struct{}
+type Hub struct {
+	router *MessageRouter
+}
 
-func NewHub() *Hub {
-	return &Hub{}
+func NewHub(rooms RoomCommands) (*Hub, error) {
+	router, err := NewMessageRouter(rooms)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Hub{router: router}, nil
 }
 
 func (h *Hub) HandleWebSocket(w http.ResponseWriter, r *http.Request) {

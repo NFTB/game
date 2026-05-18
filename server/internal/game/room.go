@@ -1,29 +1,421 @@
 package game
 
+import "sort"
+
 type Room struct {
-	ID          string
-	Phase       RoomPhase
-	Players     map[string]*Player
-	CurrentItem *Item
-	Bids        []Bid
+	id          string
+	phase       RoomPhase
+	rules       RoomRules
+	players     map[string]Player
+	playerOrder []string
+
+	roundNumber int
+	currentLot  *Lot
+	bids        map[string]Bid
+	results     []RoundResult
+
+	rebidRound        int
+	rebidParticipants map[string]struct{}
+	rebidFloors       map[string]int
 }
 
 func NewRoom(id string) *Room {
+	room, _ := NewRoomWithRules(id, DefaultRoomRules())
+	return room
+}
+
+func NewRoomWithRules(id string, rules RoomRules) (*Room, error) {
+	if id == "" {
+		return nil, ErrRoomIDRequired
+	}
+
+	normalized, err := normalizeRules(rules)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Room{
-		ID:      id,
-		Phase:   RoomPhaseLobby,
-		Players: make(map[string]*Player),
-		Bids:    make([]Bid, 0),
+		id:      id,
+		phase:   RoomPhaseLobby,
+		rules:   normalized,
+		players: make(map[string]Player),
+		bids:    make(map[string]Bid),
+		results: make([]RoundResult, 0, normalized.RoundCount),
+	}, nil
+}
+
+func normalizeRules(rules RoomRules) (RoomRules, error) {
+	defaults := DefaultRoomRules()
+	if rules.MinPlayers == 0 {
+		rules.MinPlayers = defaults.MinPlayers
+	}
+	if rules.MaxPlayers == 0 {
+		rules.MaxPlayers = defaults.MaxPlayers
+	}
+	if rules.RoundCount == 0 {
+		rules.RoundCount = defaults.RoundCount
+	}
+	if rules.MinBid == 0 {
+		rules.MinBid = defaults.MinBid
+	}
+	if rules.MaxRebidRounds == 0 {
+		rules.MaxRebidRounds = defaults.MaxRebidRounds
+	}
+	if rules.InitialGold == 0 {
+		rules.InitialGold = defaults.InitialGold
+	}
+	if rules.RoundTimeSeconds == 0 {
+		rules.RoundTimeSeconds = defaults.RoundTimeSeconds
+	}
+
+	if rules.MinPlayers < 1 || rules.MaxPlayers < rules.MinPlayers || rules.RoundCount < 1 || rules.MinBid < 1 || rules.MaxRebidRounds < 0 || rules.InitialGold < 0 || rules.RoundTimeSeconds < 1 {
+		return RoomRules{}, ErrInvalidRoomRules
+	}
+
+	return rules, nil
+}
+
+func (r *Room) ID() string {
+	return r.id
+}
+
+func (r *Room) Phase() RoomPhase {
+	return r.phase
+}
+
+func (r *Room) RoundNumber() int {
+	return r.roundNumber
+}
+
+func (r *Room) Rules() RoomRules {
+	return r.rules
+}
+
+func (r *Room) AddPlayer(player *Player) error {
+	if player == nil {
+		return ErrInvalidPlayer
+	}
+
+	return r.Join(*player)
+}
+
+func (r *Room) Join(player Player) error {
+	if r.phase != RoomPhaseLobby {
+		return ErrInvalidPhase
+	}
+	if player.ID == "" || player.Coins < 0 {
+		return ErrInvalidPlayer
+	}
+	if _, exists := r.players[player.ID]; exists {
+		return ErrPlayerAlreadyInRoom
+	}
+	if len(r.players) >= r.rules.MaxPlayers {
+		return ErrRoomFull
+	}
+
+	player.Ready = false
+	player.WonLotIDs = append([]string(nil), player.WonLotIDs...)
+	r.players[player.ID] = player
+	r.playerOrder = append(r.playerOrder, player.ID)
+	return nil
+}
+
+func (r *Room) Leave(playerID string) error {
+	if r.phase != RoomPhaseLobby {
+		return ErrInvalidPhase
+	}
+	if _, ok := r.players[playerID]; !ok {
+		return ErrPlayerNotInRoom
+	}
+
+	delete(r.players, playerID)
+	for i, orderedPlayerID := range r.playerOrder {
+		if orderedPlayerID == playerID {
+			r.playerOrder = append(r.playerOrder[:i], r.playerOrder[i+1:]...)
+			break
+		}
+	}
+
+	return nil
+}
+
+func (r *Room) SetReady(playerID string, ready bool) error {
+	if r.phase != RoomPhaseLobby {
+		return ErrInvalidPhase
+	}
+
+	player, ok := r.players[playerID]
+	if !ok {
+		return ErrPlayerNotInRoom
+	}
+
+	player.Ready = ready
+	r.players[playerID] = player
+	return nil
+}
+
+func (r *Room) AllReady() bool {
+	if len(r.players) < r.rules.MinPlayers {
+		return false
+	}
+
+	for _, player := range r.players {
+		if !player.Ready {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (r *Room) StartNextRound(lot Lot) error {
+	switch r.phase {
+	case RoomPhaseLobby:
+		if !r.AllReady() {
+			if len(r.players) < r.rules.MinPlayers {
+				return ErrNotEnoughPlayers
+			}
+			return ErrNotAllReady
+		}
+	case RoomPhaseSettlement:
+		if r.roundNumber >= r.rules.RoundCount {
+			r.phase = RoomPhaseFinished
+			return ErrMatchFinished
+		}
+	case RoomPhaseFinished:
+		return ErrMatchFinished
+	default:
+		return ErrInvalidPhase
+	}
+
+	if lot.ID == "" {
+		return ErrInvalidLot
+	}
+
+	r.roundNumber++
+	r.currentLot = cloneLot(lot)
+	r.bids = make(map[string]Bid)
+	r.rebidRound = 0
+	r.rebidParticipants = nil
+	r.rebidFloors = nil
+	r.phase = RoomPhaseAuction
+	return nil
+}
+
+func (r *Room) PlaceBid(playerID string, amount int) error {
+	if r.phase != RoomPhaseAuction && r.phase != RoomPhaseRebid {
+		return ErrInvalidPhase
+	}
+
+	player, ok := r.players[playerID]
+	if !ok {
+		return ErrPlayerNotInRoom
+	}
+	if amount < r.rules.MinBid {
+		return ErrBidTooLow
+	}
+	if amount > player.Coins {
+		return ErrBidExceedsCoins
+	}
+	if r.phase == RoomPhaseRebid {
+		if _, ok := r.rebidParticipants[playerID]; !ok {
+			return ErrPlayerNotInRebid
+		}
+		if amount <= r.rebidFloors[playerID] {
+			return ErrRebidTooLow
+		}
+	}
+
+	r.bids[playerID] = Bid{
+		PlayerID: playerID,
+		Amount:   amount,
+	}
+	return nil
+}
+
+func (r *Room) SettleRound() (RoundResult, error) {
+	if r.phase != RoomPhaseAuction && r.phase != RoomPhaseRebid {
+		return RoundResult{}, ErrInvalidPhase
+	}
+	if r.currentLot == nil {
+		return RoundResult{}, ErrNoActiveLot
+	}
+
+	if len(r.bids) == 0 {
+		return r.finishVoidRound(), nil
+	}
+
+	highest, tiedPlayerIDs := r.highestBidders()
+	if len(tiedPlayerIDs) > 1 {
+		if r.shouldVoidTiedRound() {
+			return r.finishVoidRoundWithTies(tiedPlayerIDs, highest), nil
+		}
+
+		r.enterRebid(tiedPlayerIDs)
+		return RoundResult{
+			RoundNumber:   r.roundNumber,
+			Outcome:       RoundOutcomeNeedsRebid,
+			WinningBid:    highest,
+			Lot:           *cloneLot(*r.currentLot),
+			TiedPlayerIDs: append([]string(nil), tiedPlayerIDs...),
+		}, nil
+	}
+
+	winnerID := tiedPlayerIDs[0]
+	winner := r.players[winnerID]
+	winner.Coins -= highest
+	winner.WonLotIDs = append(winner.WonLotIDs, r.currentLot.ID)
+	r.players[winnerID] = winner
+
+	result := RoundResult{
+		RoundNumber: r.roundNumber,
+		Outcome:     RoundOutcomeAwarded,
+		WinnerID:    winnerID,
+		WinningBid:  highest,
+		Lot:         *cloneLot(*r.currentLot),
+	}
+	r.results = append(r.results, result)
+	r.phase = RoomPhaseSettlement
+	r.bids = make(map[string]Bid)
+	r.rebidParticipants = nil
+	r.rebidFloors = nil
+	return result, nil
+}
+
+func (r *Room) SnapshotFor(_ string) RoomSnapshot {
+	players := make([]PlayerSnapshot, 0, len(r.playerOrder))
+	for _, playerID := range r.playerOrder {
+		player := r.players[playerID]
+		players = append(players, PlayerSnapshot{
+			ID:          player.ID,
+			DisplayName: player.DisplayName,
+			Coins:       player.Coins,
+			Ready:       player.Ready,
+			WonLotIDs:   append([]string(nil), player.WonLotIDs...),
+		})
+	}
+
+	bids := make([]BidSnapshot, 0, len(r.bids))
+	bidPlayerIDs := make([]string, 0, len(r.bids))
+	for playerID := range r.bids {
+		bidPlayerIDs = append(bidPlayerIDs, playerID)
+	}
+	sort.Strings(bidPlayerIDs)
+	for _, playerID := range bidPlayerIDs {
+		bids = append(bids, BidSnapshot{
+			PlayerID: playerID,
+			HasBid:   true,
+		})
+	}
+
+	var lot *Lot
+	if r.currentLot != nil {
+		lot = cloneLot(*r.currentLot)
+	}
+
+	return RoomSnapshot{
+		RoomID:           r.id,
+		Phase:            r.phase,
+		RoundNumber:      r.roundNumber,
+		RoundTimeSeconds: r.rules.RoundTimeSeconds,
+		Players:          players,
+		CurrentLot:       lot,
+		Bids:             bids,
+		RebidPlayerIDs:   r.rebidPlayerIDs(),
 	}
 }
 
-func (r *Room) AddPlayer(player *Player) {
-	r.Players[player.ID] = player
+func (r *Room) Results() []RoundResult {
+	results := make([]RoundResult, 0, len(r.results))
+	for _, result := range r.results {
+		result.Lot = *cloneLot(result.Lot)
+		result.TiedPlayerIDs = append([]string(nil), result.TiedPlayerIDs...)
+		results = append(results, result)
+	}
+
+	return results
 }
 
-func (r *Room) PlaceBid(playerID string, amount int) {
-	r.Bids = append(r.Bids, Bid{
-		PlayerID: playerID,
-		Amount:   amount,
-	})
+func (r *Room) highestBidders() (int, []string) {
+	highest := 0
+	tiedPlayerIDs := make([]string, 0)
+	for _, bid := range r.bids {
+		if bid.Amount > highest {
+			highest = bid.Amount
+			tiedPlayerIDs = tiedPlayerIDs[:0]
+			tiedPlayerIDs = append(tiedPlayerIDs, bid.PlayerID)
+			continue
+		}
+		if bid.Amount == highest {
+			tiedPlayerIDs = append(tiedPlayerIDs, bid.PlayerID)
+		}
+	}
+	sort.Strings(tiedPlayerIDs)
+	return highest, tiedPlayerIDs
+}
+
+func (r *Room) shouldVoidTiedRound() bool {
+	return r.rules.MaxRebidRounds == 0 || (r.phase == RoomPhaseRebid && r.rebidRound >= r.rules.MaxRebidRounds)
+}
+
+func (r *Room) enterRebid(tiedPlayerIDs []string) {
+	r.rebidRound++
+	r.rebidParticipants = make(map[string]struct{}, len(tiedPlayerIDs))
+	r.rebidFloors = make(map[string]int, len(tiedPlayerIDs))
+
+	for _, playerID := range tiedPlayerIDs {
+		r.rebidParticipants[playerID] = struct{}{}
+		r.rebidFloors[playerID] = r.bids[playerID].Amount
+	}
+
+	r.bids = make(map[string]Bid)
+	r.phase = RoomPhaseRebid
+}
+
+func (r *Room) finishVoidRound() RoundResult {
+	result := RoundResult{
+		RoundNumber: r.roundNumber,
+		Outcome:     RoundOutcomeVoid,
+		Lot:         *cloneLot(*r.currentLot),
+	}
+	r.results = append(r.results, result)
+	r.phase = RoomPhaseSettlement
+	r.bids = make(map[string]Bid)
+	r.rebidParticipants = nil
+	r.rebidFloors = nil
+	return result
+}
+
+func (r *Room) finishVoidRoundWithTies(tiedPlayerIDs []string, winningBid int) RoundResult {
+	result := RoundResult{
+		RoundNumber:   r.roundNumber,
+		Outcome:       RoundOutcomeVoid,
+		WinningBid:    winningBid,
+		Lot:           *cloneLot(*r.currentLot),
+		TiedPlayerIDs: append([]string(nil), tiedPlayerIDs...),
+	}
+	r.results = append(r.results, result)
+	r.phase = RoomPhaseSettlement
+	r.bids = make(map[string]Bid)
+	r.rebidParticipants = nil
+	r.rebidFloors = nil
+	return result
+}
+
+func (r *Room) rebidPlayerIDs() []string {
+	if len(r.rebidParticipants) == 0 {
+		return nil
+	}
+
+	playerIDs := make([]string, 0, len(r.rebidParticipants))
+	for playerID := range r.rebidParticipants {
+		playerIDs = append(playerIDs, playerID)
+	}
+	sort.Strings(playerIDs)
+	return playerIDs
+}
+
+func cloneLot(lot Lot) *Lot {
+	lot.Items = append([]Item(nil), lot.Items...)
+	return &lot
 }
