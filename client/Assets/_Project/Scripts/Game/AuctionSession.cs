@@ -1,17 +1,24 @@
 using BidKing.Client.Networking;
+using System;
+using UnityEngine;
 
 namespace BidKing.Client.Game
 {
-    public sealed class AuctionSession : System.IDisposable
+    public sealed class AuctionSession : IDisposable
     {
         private readonly RealtimeClient realtimeClient;
 
         public AuctionSession(string serverUrl)
         {
             realtimeClient = new RealtimeClient(serverUrl);
+            realtimeClient.MessageReceived += HandleMessageReceived;
         }
 
+        public event Action<RealtimeMessage> MessageReceived;
+        public event Action<RoomSnapshot> SnapshotUpdated;
+
         public RealtimeClient RealtimeClient => realtimeClient;
+        public RoomSnapshot CurrentSnapshot { get; private set; }
 
         public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken = default)
         {
@@ -55,7 +62,21 @@ namespace BidKing.Client.Game
 
         public void Dispose()
         {
+            realtimeClient.MessageReceived -= HandleMessageReceived;
             realtimeClient.Dispose();
+        }
+
+        private void HandleMessageReceived(RealtimeMessage message)
+        {
+            MessageReceived?.Invoke(message);
+            if (message.Type != "room.snapshot")
+            {
+                return;
+            }
+
+            RoomSnapshot snapshot = JsonUtility.FromJson<RoomSnapshot>(message.PayloadJson);
+            CurrentSnapshot = snapshot;
+            SnapshotUpdated?.Invoke(snapshot);
         }
 
         private static string EscapeJson(string value)
