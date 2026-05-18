@@ -21,6 +21,11 @@ namespace BidKing.Client.App
             session?.Dispose();
         }
 
+        private void Update()
+        {
+            session?.Tick();
+        }
+
         public AuctionSession Session => session;
     }
 }

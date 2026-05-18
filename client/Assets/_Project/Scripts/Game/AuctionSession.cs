@@ -1,5 +1,6 @@
 using BidKing.Client.Networking;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BidKing.Client.Game
@@ -7,11 +8,13 @@ namespace BidKing.Client.Game
     public sealed class AuctionSession : IDisposable
     {
         private readonly RealtimeClient realtimeClient;
+        private readonly Queue<RealtimeMessage> pendingMessages = new();
+        private readonly object messageLock = new();
 
         public AuctionSession(string serverUrl)
         {
             realtimeClient = new RealtimeClient(serverUrl);
-            realtimeClient.MessageReceived += HandleMessageReceived;
+            realtimeClient.MessageReceived += EnqueueMessage;
         }
 
         public event Action<RealtimeMessage> MessageReceived;
@@ -19,6 +22,14 @@ namespace BidKing.Client.Game
 
         public RealtimeClient RealtimeClient => realtimeClient;
         public RoomSnapshot CurrentSnapshot { get; private set; }
+
+        public void Tick()
+        {
+            while (TryDequeueMessage(out RealtimeMessage message))
+            {
+                HandleMessageReceived(message);
+            }
+        }
 
         public System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken = default)
         {
@@ -62,8 +73,31 @@ namespace BidKing.Client.Game
 
         public void Dispose()
         {
-            realtimeClient.MessageReceived -= HandleMessageReceived;
+            realtimeClient.MessageReceived -= EnqueueMessage;
             realtimeClient.Dispose();
+        }
+
+        private void EnqueueMessage(RealtimeMessage message)
+        {
+            lock (messageLock)
+            {
+                pendingMessages.Enqueue(message);
+            }
+        }
+
+        private bool TryDequeueMessage(out RealtimeMessage message)
+        {
+            lock (messageLock)
+            {
+                if (pendingMessages.Count == 0)
+                {
+                    message = default;
+                    return false;
+                }
+
+                message = pendingMessages.Dequeue();
+                return true;
+            }
         }
 
         private void HandleMessageReceived(RealtimeMessage message)
