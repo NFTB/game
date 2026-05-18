@@ -16,6 +16,11 @@ namespace BidKing.Client.App
             Debug.Log($"BidKing client booted. Server: {serverUrl}");
         }
 
+        private void OnDestroy()
+        {
+            session?.Dispose();
+        }
+
         public AuctionSession Session => session;
     }
 }
