@@ -280,6 +280,35 @@ func TestFinishMovesSettledFinalRoundToFinished(t *testing.T) {
 	}
 }
 
+func TestConfirmSettlementRequiresAllPlayers(t *testing.T) {
+	room := startedRoom(t)
+	if err := room.PlaceBid("player_1", 10); err != nil {
+		t.Fatalf("bid player 1: %v", err)
+	}
+	if err := room.Pass("player_2"); err != nil {
+		t.Fatalf("pass player 2: %v", err)
+	}
+	if _, err := room.SettleRound(); err != nil {
+		t.Fatalf("settle round: %v", err)
+	}
+
+	ready, err := room.ConfirmSettlement("player_1")
+	if err != nil {
+		t.Fatalf("confirm player 1: %v", err)
+	}
+	if ready {
+		t.Fatal("settlement should wait for player 2")
+	}
+
+	ready, err = room.ConfirmSettlement("player_2")
+	if err != nil {
+		t.Fatalf("confirm player 2: %v", err)
+	}
+	if !ready {
+		t.Fatal("settlement should be ready after all players confirm")
+	}
+}
+
 func startedRoom(t *testing.T) *Room {
 	t.Helper()
 	return startedRoomWithRules(t, DefaultRoomRules())

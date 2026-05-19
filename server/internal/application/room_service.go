@@ -258,12 +258,24 @@ func (s *RoomService) AdvanceAfterSettlement(ctx context.Context, roomID string,
 		return AdvanceRoundResult{}, err
 	}
 
+	ready, err := room.ConfirmSettlement(playerID)
+	if err != nil {
+		return AdvanceRoundResult{}, err
+	}
+	if !ready {
+		return AdvanceRoundResult{
+			Waiting:  true,
+			Snapshot: room.SnapshotFor(playerID),
+		}, nil
+	}
+
 	if room.RoundNumber() >= s.rules.RoundCount {
 		if err := room.Finish(); err != nil {
 			return AdvanceRoundResult{}, err
 		}
 		return AdvanceRoundResult{
 			Finished: true,
+			Advanced: true,
 			Snapshot: room.SnapshotFor(playerID),
 		}, nil
 	}
@@ -277,6 +289,7 @@ func (s *RoomService) AdvanceAfterSettlement(ctx context.Context, roomID string,
 	}
 
 	return AdvanceRoundResult{
+		Advanced: true,
 		Snapshot: room.SnapshotFor(playerID),
 	}, nil
 }

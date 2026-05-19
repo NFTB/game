@@ -105,11 +105,23 @@ func TestMessageRouterAdvancesNextRound(t *testing.T) {
 	route(t, router, ctx, alice, "auction.bid", "bid", map[string]any{"amount": 100})
 	route(t, router, ctx, bob, "auction.pass", "pass", map[string]any{})
 
-	responses := route(t, router, ctx, alice, "auction.next_round", "next", map[string]any{})
+	responses := route(t, router, ctx, alice, "auction.next_round", "next_alice", map[string]any{})
 	if len(responses) != 1 || responses[0].Type != "room.snapshot" {
 		t.Fatalf("responses = %+v, want room.snapshot", responses)
 	}
 	snapshot, ok := responses[0].Payload.(game.RoomSnapshot)
+	if !ok {
+		t.Fatalf("payload type = %T, want game.RoomSnapshot", responses[0].Payload)
+	}
+	if snapshot.Phase != game.RoomPhaseSettlement || snapshot.RoundNumber != 1 {
+		t.Fatalf("snapshot = %+v, want settlement round 1", snapshot)
+	}
+
+	responses = route(t, router, ctx, bob, "auction.next_round", "next_bob", map[string]any{})
+	if len(responses) != 1 || responses[0].Type != "room.snapshot" {
+		t.Fatalf("responses = %+v, want room.snapshot", responses)
+	}
+	snapshot, ok = responses[0].Payload.(game.RoomSnapshot)
 	if !ok {
 		t.Fatalf("payload type = %T, want game.RoomSnapshot", responses[0].Payload)
 	}

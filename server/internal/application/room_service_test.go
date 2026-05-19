@@ -171,12 +171,23 @@ func TestRoomServiceAdvanceAfterSettlementStartsNextRound(t *testing.T) {
 
 	advanced, err := service.AdvanceAfterSettlement(ctx, roomID, alice.PlayerID)
 	if err != nil {
-		t.Fatalf("advance after settlement: %v", err)
+		t.Fatalf("alice confirms settlement: %v", err)
+	}
+	if !advanced.Waiting {
+		t.Fatalf("first confirmation = %+v, want waiting", advanced)
+	}
+	if advanced.Snapshot.Phase != game.RoomPhaseSettlement || advanced.Snapshot.RoundNumber != 1 {
+		t.Fatalf("snapshot after first confirmation = %+v, want settlement round 1", advanced.Snapshot)
+	}
+
+	advanced, err = service.AdvanceAfterSettlement(ctx, roomID, bob.PlayerID)
+	if err != nil {
+		t.Fatalf("bob confirms settlement: %v", err)
 	}
 	if advanced.Finished {
 		t.Fatal("room should not be finished after first round")
 	}
-	if advanced.Snapshot.Phase != game.RoomPhaseAuction || advanced.Snapshot.RoundNumber != 2 {
+	if !advanced.Advanced || advanced.Snapshot.Phase != game.RoomPhaseAuction || advanced.Snapshot.RoundNumber != 2 {
 		t.Fatalf("snapshot = %+v, want auction round 2", advanced.Snapshot)
 	}
 }
@@ -203,7 +214,15 @@ func TestRoomServiceAdvanceAfterFinalSettlementFinishesMatch(t *testing.T) {
 
 	advanced, err := service.AdvanceAfterSettlement(ctx, roomID, alice.PlayerID)
 	if err != nil {
-		t.Fatalf("advance after final settlement: %v", err)
+		t.Fatalf("alice confirms final settlement: %v", err)
+	}
+	if !advanced.Waiting {
+		t.Fatalf("first final confirmation = %+v, want waiting", advanced)
+	}
+
+	advanced, err = service.AdvanceAfterSettlement(ctx, roomID, bob.PlayerID)
+	if err != nil {
+		t.Fatalf("bob confirms final settlement: %v", err)
 	}
 	if !advanced.Finished {
 		t.Fatal("room should be finished after final round")

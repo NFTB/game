@@ -45,5 +45,7 @@ type SettleRoundResult struct {
 
 type AdvanceRoundResult struct {
 	Finished bool
+	Advanced bool
+	Waiting  bool
 	Snapshot game.RoomSnapshot
 }

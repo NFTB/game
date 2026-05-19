@@ -38,6 +38,7 @@ var (
 	ErrRebidTooLow         = errors.New("rebid must exceed previous bid")
 	ErrMatchFinished       = errors.New("match is finished")
 	ErrRoundsRemaining     = errors.New("rounds are remaining")
+	ErrSettlementNotReady  = errors.New("not all players confirmed settlement")
 )
 
 type RoomRules struct {

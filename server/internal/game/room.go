@@ -17,6 +17,7 @@ type Room struct {
 	rebidRound        int
 	rebidParticipants map[string]struct{}
 	rebidFloors       map[string]int
+	settlementReady   map[string]struct{}
 }
 
 func NewRoom(id string) *Room {
@@ -198,6 +199,7 @@ func (r *Room) StartNextRound(lot Lot) error {
 	r.rebidRound = 0
 	r.rebidParticipants = nil
 	r.rebidFloors = nil
+	r.settlementReady = nil
 	r.phase = RoomPhaseAuction
 	return nil
 }
@@ -212,6 +214,21 @@ func (r *Room) Finish() error {
 
 	r.phase = RoomPhaseFinished
 	return nil
+}
+
+func (r *Room) ConfirmSettlement(playerID string) (bool, error) {
+	if r.phase != RoomPhaseSettlement {
+		return false, ErrInvalidPhase
+	}
+	if _, ok := r.players[playerID]; !ok {
+		return false, ErrPlayerNotInRoom
+	}
+	if r.settlementReady == nil {
+		r.settlementReady = make(map[string]struct{}, len(r.players))
+	}
+
+	r.settlementReady[playerID] = struct{}{}
+	return len(r.settlementReady) == len(r.players), nil
 }
 
 func (r *Room) PlaceBid(playerID string, amount int) error {
@@ -310,6 +327,7 @@ func (r *Room) SettleRound() (RoundResult, error) {
 	r.bids = make(map[string]Bid)
 	r.rebidParticipants = nil
 	r.rebidFloors = nil
+	r.settlementReady = make(map[string]struct{}, len(r.players))
 	return result, nil
 }
 
@@ -451,6 +469,7 @@ func (r *Room) finishVoidRound() RoundResult {
 	r.bids = make(map[string]Bid)
 	r.rebidParticipants = nil
 	r.rebidFloors = nil
+	r.settlementReady = make(map[string]struct{}, len(r.players))
 	return result
 }
 
@@ -467,6 +486,7 @@ func (r *Room) finishVoidRoundWithTies(tiedPlayerIDs []string, winningBid int) R
 	r.bids = make(map[string]Bid)
 	r.rebidParticipants = nil
 	r.rebidFloors = nil
+	r.settlementReady = make(map[string]struct{}, len(r.players))
 	return result
 }
 
