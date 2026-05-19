@@ -18,7 +18,7 @@ func Run() error {
 		return err
 	}
 
-	roomService, err := application.NewRoomService(roomRules(gameplay.Rules), application.NewSequentialIDGenerator(), application.NewStaticLotProvider(lotsFromCollectibles(gameplay.Collectibles)))
+	roomService, err := application.NewRoomService(roomRules(gameplay), application.NewSequentialIDGenerator(), application.NewStaticLotProvider(lotsFromGameplay(gameplay)))
 	if err != nil {
 		return err
 	}
@@ -38,31 +38,34 @@ func Run() error {
 	return server.ListenAndServe()
 }
 
-func roomRules(data config.GameRulesData) game.RoomRules {
+func roomRules(data config.GameplayData) game.RoomRules {
 	rules := game.DefaultRoomRules()
-	rules.MinPlayers = data.Players.Min
-	rules.MaxPlayers = data.Players.Max
-	rules.InitialGold = data.Players.InitialGold
-	rules.RoundCount = data.Rounds.Count
-	rules.RoundTimeSeconds = data.Rounds.TimeLimitSeconds
-	rules.MinBid = data.Bidding.MinBid
-	rules.MaxRebidRounds = data.Tiebreaker.MaxRounds
+	rules.MinPlayers = data.Rules.Players.Min
+	rules.MaxPlayers = data.Rules.Players.Max
+	rules.InitialGold = data.Rules.Players.InitialGold
+	rules.RoundCount = data.Rules.Rounds.Count
+	rules.RoundTimeSeconds = data.Rules.Rounds.TimeLimitSeconds
+	rules.MinBid = data.Rules.Bidding.MinBid
+	rules.MaxRebidRounds = data.Rules.Tiebreaker.MaxRounds
+	rules.RoundEntryFee = data.Venues[0].RoundEntryFee
 	return rules
 }
 
-func lotsFromCollectibles(collectibles []config.CollectibleData) []game.Lot {
-	const lotSize = 5
+func lotsFromGameplay(data config.GameplayData) []game.Lot {
+	lotSize := data.Venues[0].CollectibleCountRange.Min
+	if lotSize <= 0 {
+		lotSize = len(data.Collectibles)
+	}
 
-	lots := make([]game.Lot, 0, (len(collectibles)+lotSize-1)/lotSize)
-	for start := 0; start < len(collectibles); start += lotSize {
-		end := start + lotSize
-		if end > len(collectibles) {
-			end = len(collectibles)
-		}
-
-		items := make([]game.Item, 0, end-start)
+	lots := make([]game.Lot, 0, data.Rules.Rounds.Count)
+	collectibleIndex := 0
+	for round := 0; round < data.Rules.Rounds.Count; round++ {
+		items := make([]game.Item, 0, lotSize)
 		trueValue := 0
-		for _, collectible := range collectibles[start:end] {
+		for i := 0; i < lotSize; i++ {
+			collectible := data.Collectibles[collectibleIndex%len(data.Collectibles)]
+			collectibleIndex++
+
 			trueValue += collectible.TrueValue
 			items = append(items, game.Item{
 				ID:          collectible.ID,

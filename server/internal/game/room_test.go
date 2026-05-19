@@ -50,6 +50,20 @@ func TestRoomJoinReadyAndStartRound(t *testing.T) {
 	}
 }
 
+func TestStartNextRoundChargesEntryFee(t *testing.T) {
+	rules := DefaultRoomRules()
+	rules.RoundEntryFee = 10
+	room := startedRoomWithPlayersAndRules(t, rules, []Player{
+		{ID: "player_1", DisplayName: "A", Coins: 100},
+		{ID: "player_2", DisplayName: "B", Coins: 100},
+	})
+
+	snapshot := room.SnapshotFor("player_1")
+	if snapshot.Players[0].Coins != 90 || snapshot.Players[1].Coins != 90 {
+		t.Fatalf("coins after entry fee = %d, %d; want 90, 90", snapshot.Players[0].Coins, snapshot.Players[1].Coins)
+	}
+}
+
 func TestRoomLeaveRemovesPlayerBeforeRoundStarts(t *testing.T) {
 	room := NewRoom("room_1")
 

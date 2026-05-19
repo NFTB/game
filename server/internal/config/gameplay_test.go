@@ -14,6 +14,9 @@ func TestLoadGameplayData(t *testing.T) {
 		"bidding": {"min_bid": 1},
 		"tiebreaker": {"max_rounds": 10}
 	}`)
+	writeFile(t, filepath.Join(dir, "venues.json"), `[
+		{"id": "v_1", "name": "场所", "round_entry_fee": 10, "collectible_count_range": {"min": 3, "max": 5}}
+	]`)
 	writeFile(t, filepath.Join(dir, "collectibles.json"), `[
 		{"id": "c_1", "name": "藏品", "type": "瓷器", "tier": "R", "outline": "1x1", "true_value": 100, "sell_value": 100, "size": [1, 1]}
 	]`)
@@ -27,6 +30,9 @@ func TestLoadGameplayData(t *testing.T) {
 	}
 	if len(data.Collectibles) != 1 || data.Collectibles[0].ID != "c_1" {
 		t.Fatalf("collectibles = %+v, want c_1", data.Collectibles)
+	}
+	if len(data.Venues) != 1 || data.Venues[0].RoundEntryFee != 10 {
+		t.Fatalf("venues = %+v, want entry fee 10", data.Venues)
 	}
 }
 

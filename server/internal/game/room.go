@@ -69,7 +69,7 @@ func normalizeRules(rules RoomRules) (RoomRules, error) {
 		rules.RoundTimeSeconds = defaults.RoundTimeSeconds
 	}
 
-	if rules.MinPlayers < 1 || rules.MaxPlayers < rules.MinPlayers || rules.RoundCount < 1 || rules.MinBid < 1 || rules.MaxRebidRounds < 0 || rules.InitialGold < 0 || rules.RoundTimeSeconds < 1 {
+	if rules.MinPlayers < 1 || rules.MaxPlayers < rules.MinPlayers || rules.RoundCount < 1 || rules.MinBid < 1 || rules.MaxRebidRounds < 0 || rules.InitialGold < 0 || rules.RoundTimeSeconds < 1 || rules.RoundEntryFee < 0 {
 		return RoomRules{}, ErrInvalidRoomRules
 	}
 
@@ -197,6 +197,9 @@ func (r *Room) StartNextRound(lot Lot) error {
 	if lot.ID == "" {
 		return ErrInvalidLot
 	}
+	if err := r.chargeRoundEntryFee(); err != nil {
+		return err
+	}
 
 	r.roundNumber++
 	r.currentLot = cloneLot(lot)
@@ -206,6 +209,24 @@ func (r *Room) StartNextRound(lot Lot) error {
 	r.rebidFloors = nil
 	r.settlementReady = nil
 	r.phase = RoomPhaseAuction
+	return nil
+}
+
+func (r *Room) chargeRoundEntryFee() error {
+	if r.rules.RoundEntryFee == 0 {
+		return nil
+	}
+
+	for _, player := range r.players {
+		if player.Coins < r.rules.RoundEntryFee {
+			return ErrEntryFeeExceedsCoins
+		}
+	}
+	for playerID, player := range r.players {
+		player.Coins -= r.rules.RoundEntryFee
+		r.players[playerID] = player
+	}
+
 	return nil
 }
 

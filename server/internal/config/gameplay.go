@@ -9,6 +9,7 @@ import (
 
 type GameplayData struct {
 	Rules        GameRulesData
+	Venues       []VenueData
 	Collectibles []CollectibleData
 }
 
@@ -41,13 +42,29 @@ type CollectibleData struct {
 	Size      []int  `json:"size"`
 }
 
+type VenueData struct {
+	ID                    string `json:"id"`
+	Name                  string `json:"name"`
+	RoundEntryFee         int    `json:"round_entry_fee"`
+	CollectibleCountRange struct {
+		Min int `json:"min"`
+		Max int `json:"max"`
+	} `json:"collectible_count_range"`
+}
+
 func LoadGameplayData(configDir string) (GameplayData, error) {
 	var data GameplayData
 	if err := readJSON(filepath.Join(configDir, "game_rules.json"), &data.Rules); err != nil {
 		return GameplayData{}, err
 	}
+	if err := readJSON(filepath.Join(configDir, "venues.json"), &data.Venues); err != nil {
+		return GameplayData{}, err
+	}
 	if err := readJSON(filepath.Join(configDir, "collectibles.json"), &data.Collectibles); err != nil {
 		return GameplayData{}, err
+	}
+	if len(data.Venues) == 0 {
+		return GameplayData{}, fmt.Errorf("venues config is empty")
 	}
 	if len(data.Collectibles) == 0 {
 		return GameplayData{}, fmt.Errorf("collectibles config is empty")

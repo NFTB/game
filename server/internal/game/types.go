@@ -21,24 +21,25 @@ const (
 )
 
 var (
-	ErrRoomIDRequired      = errors.New("room id is required")
-	ErrInvalidRoomRules    = errors.New("invalid room rules")
-	ErrInvalidPhase        = errors.New("invalid room phase")
-	ErrRoomFull            = errors.New("room is full")
-	ErrPlayerAlreadyInRoom = errors.New("player is already in room")
-	ErrPlayerNotInRoom     = errors.New("player is not in room")
-	ErrInvalidPlayer       = errors.New("invalid player")
-	ErrNotEnoughPlayers    = errors.New("not enough players")
-	ErrNotAllReady         = errors.New("not all players are ready")
-	ErrInvalidLot          = errors.New("invalid auction lot")
-	ErrNoActiveLot         = errors.New("no active auction lot")
-	ErrBidTooLow           = errors.New("bid is too low")
-	ErrBidExceedsCoins     = errors.New("bid exceeds player coins")
-	ErrPlayerNotInRebid    = errors.New("player is not eligible for rebid")
-	ErrRebidTooLow         = errors.New("rebid must exceed previous bid")
-	ErrMatchFinished       = errors.New("match is finished")
-	ErrRoundsRemaining     = errors.New("rounds are remaining")
-	ErrSettlementNotReady  = errors.New("not all players confirmed settlement")
+	ErrRoomIDRequired       = errors.New("room id is required")
+	ErrInvalidRoomRules     = errors.New("invalid room rules")
+	ErrInvalidPhase         = errors.New("invalid room phase")
+	ErrRoomFull             = errors.New("room is full")
+	ErrPlayerAlreadyInRoom  = errors.New("player is already in room")
+	ErrPlayerNotInRoom      = errors.New("player is not in room")
+	ErrInvalidPlayer        = errors.New("invalid player")
+	ErrNotEnoughPlayers     = errors.New("not enough players")
+	ErrNotAllReady          = errors.New("not all players are ready")
+	ErrInvalidLot           = errors.New("invalid auction lot")
+	ErrNoActiveLot          = errors.New("no active auction lot")
+	ErrBidTooLow            = errors.New("bid is too low")
+	ErrBidExceedsCoins      = errors.New("bid exceeds player coins")
+	ErrEntryFeeExceedsCoins = errors.New("entry fee exceeds player coins")
+	ErrPlayerNotInRebid     = errors.New("player is not eligible for rebid")
+	ErrRebidTooLow          = errors.New("rebid must exceed previous bid")
+	ErrMatchFinished        = errors.New("match is finished")
+	ErrRoundsRemaining      = errors.New("rounds are remaining")
+	ErrSettlementNotReady   = errors.New("not all players confirmed settlement")
 )
 
 type RoomRules struct {
@@ -49,6 +50,7 @@ type RoomRules struct {
 	MaxRebidRounds   int
 	InitialGold      int
 	RoundTimeSeconds int
+	RoundEntryFee    int
 }
 
 func DefaultRoomRules() RoomRules {
