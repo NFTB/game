@@ -241,6 +241,12 @@ func TestTieEntersRebidAndThenAwardsWinner(t *testing.T) {
 	if result.Outcome != RoundOutcomeNeedsRebid {
 		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeNeedsRebid)
 	}
+	if result.Lot.TrueValue != 0 || len(result.Lot.Items) != 0 {
+		t.Fatalf("needs rebid result leaked lot details: %+v", result.Lot)
+	}
+	if result.WinningBid != 0 {
+		t.Fatalf("needs rebid winning bid = %d, want hidden", result.WinningBid)
+	}
 	if got := room.Phase(); got != RoomPhaseRebid {
 		t.Fatalf("phase = %s, want %s", got, RoomPhaseRebid)
 	}
@@ -286,6 +292,9 @@ func TestTieVoidsImmediatelyWhenMaxRebidRoundsIsZero(t *testing.T) {
 	if result.Outcome != RoundOutcomeVoid {
 		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
 	}
+	if result.WinningBid != 0 {
+		t.Fatalf("void tie winning bid = %d, want hidden", result.WinningBid)
+	}
 	if got := room.Phase(); got != RoomPhaseSettlement {
 		t.Fatalf("phase = %s, want %s", got, RoomPhaseSettlement)
 	}
@@ -319,6 +328,9 @@ func TestTieVoidsAfterMaxRebidRounds(t *testing.T) {
 	}
 	if result.Outcome != RoundOutcomeVoid {
 		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
+	}
+	if result.WinningBid != 0 {
+		t.Fatalf("void tie winning bid = %d, want hidden", result.WinningBid)
 	}
 	if got := room.Phase(); got != RoomPhaseSettlement {
 		t.Fatalf("phase = %s, want %s", got, RoomPhaseSettlement)

@@ -322,15 +322,14 @@ func (r *Room) SettleRound() (RoundResult, error) {
 	}
 	if len(tiedPlayerIDs) > 1 {
 		if r.shouldVoidTiedRound() {
-			return r.finishVoidRoundWithTies(tiedPlayerIDs, highest), nil
+			return r.finishVoidRoundWithTies(tiedPlayerIDs), nil
 		}
 
 		r.enterRebid(tiedPlayerIDs)
 		return RoundResult{
 			RoundNumber:   r.roundNumber,
 			Outcome:       RoundOutcomeNeedsRebid,
-			WinningBid:    highest,
-			Lot:           *cloneLot(*r.currentLot),
+			Lot:           r.publicLot(),
 			TiedPlayerIDs: append([]string(nil), tiedPlayerIDs...),
 		}, nil
 	}
@@ -429,6 +428,17 @@ func (r *Room) snapshotLot() *Lot {
 	}
 }
 
+func (r *Room) publicLot() Lot {
+	if r.currentLot == nil {
+		return Lot{}
+	}
+
+	return Lot{
+		ID:          r.currentLot.ID,
+		DisplayName: r.currentLot.DisplayName,
+	}
+}
+
 func (r *Room) highestBidders() (int, []string) {
 	highest := 0
 	tiedPlayerIDs := make([]string, 0)
@@ -501,11 +511,10 @@ func (r *Room) finishVoidRound() RoundResult {
 	return result
 }
 
-func (r *Room) finishVoidRoundWithTies(tiedPlayerIDs []string, winningBid int) RoundResult {
+func (r *Room) finishVoidRoundWithTies(tiedPlayerIDs []string) RoundResult {
 	result := RoundResult{
 		RoundNumber:   r.roundNumber,
 		Outcome:       RoundOutcomeVoid,
-		WinningBid:    winningBid,
 		Lot:           *cloneLot(*r.currentLot),
 		TiedPlayerIDs: append([]string(nil), tiedPlayerIDs...),
 	}
