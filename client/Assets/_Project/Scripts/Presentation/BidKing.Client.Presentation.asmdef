@@ -1,0 +1,17 @@
+{
+  "name": "BidKing.Client.Presentation",
+  "rootNamespace": "BidKing.Client.Presentation",
+  "references": [
+    "BidKing.Client.Domain",
+    "BidKing.Client.Application"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

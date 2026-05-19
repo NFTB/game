@@ -1,4 +1,6 @@
-using BidKing.Client.Game;
+using BidKing.Client.Application.Ports;
+using BidKing.Client.Application.Sessions;
+using BidKing.Client.Infrastructure.Networking;
 using UnityEngine;
 
 namespace BidKing.Client.App
@@ -12,9 +14,14 @@ namespace BidKing.Client.App
         private void Awake()
         {
             DontDestroyOnLoad(gameObject);
-            session = new AuctionSession(serverUrl);
+
+            IRealtimeClient realtimeClient = new RealtimeClient(serverUrl);
+            session = new AuctionSession(realtimeClient);
+
             Debug.Log($"BidKing client booted. Server: {serverUrl}");
         }
+
+        public AuctionSession Session => session;
 
         private void OnDestroy()
         {
@@ -25,7 +32,5 @@ namespace BidKing.Client.App
         {
             session?.Tick();
         }
-
-        public AuctionSession Session => session;
     }
 }
