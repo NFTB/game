@@ -69,8 +69,54 @@ func LoadGameplayData(configDir string) (GameplayData, error) {
 	if len(data.Collectibles) == 0 {
 		return GameplayData{}, fmt.Errorf("collectibles config is empty")
 	}
+	if err := validateGameplayData(data); err != nil {
+		return GameplayData{}, err
+	}
 
 	return data, nil
+}
+
+func validateGameplayData(data GameplayData) error {
+	if data.Rules.Players.Min < 1 || data.Rules.Players.Max < data.Rules.Players.Min || data.Rules.Players.InitialGold < 0 {
+		return fmt.Errorf("invalid players config")
+	}
+	if data.Rules.Rounds.Count < 1 || data.Rules.Rounds.TimeLimitSeconds < 1 {
+		return fmt.Errorf("invalid rounds config")
+	}
+	if data.Rules.Bidding.MinBid < 1 {
+		return fmt.Errorf("invalid bidding config")
+	}
+	if data.Rules.Tiebreaker.MaxRounds < 0 {
+		return fmt.Errorf("invalid tiebreaker config")
+	}
+
+	for _, venue := range data.Venues {
+		if venue.ID == "" || venue.Name == "" || venue.RoundEntryFee < 0 {
+			return fmt.Errorf("invalid venue config: %s", venue.ID)
+		}
+		if venue.CollectibleCountRange.Min < 1 || venue.CollectibleCountRange.Max < venue.CollectibleCountRange.Min {
+			return fmt.Errorf("invalid venue collectible count range: %s", venue.ID)
+		}
+	}
+
+	seenCollectibleIDs := make(map[string]struct{}, len(data.Collectibles))
+	for _, collectible := range data.Collectibles {
+		if collectible.ID == "" || collectible.Name == "" || collectible.Type == "" || collectible.Tier == "" {
+			return fmt.Errorf("invalid collectible config: %s", collectible.ID)
+		}
+		if _, exists := seenCollectibleIDs[collectible.ID]; exists {
+			return fmt.Errorf("duplicate collectible id: %s", collectible.ID)
+		}
+		seenCollectibleIDs[collectible.ID] = struct{}{}
+		if collectible.TrueValue < 1 || collectible.SellValue < 0 {
+			return fmt.Errorf("invalid collectible values: %s", collectible.ID)
+		}
+		if len(collectible.Size) != 2 || collectible.Size[0] < 1 || collectible.Size[1] < 1 {
+			return fmt.Errorf("invalid collectible size: %s", collectible.ID)
+		}
+	}
+
+	return nil
 }
 
 func readJSON(path string, target any) error {
