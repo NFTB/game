@@ -150,6 +150,27 @@ func TestMessageRouterLeaveRoomReturnsSnapshotAndMarksSessionForClear(t *testing
 	}
 }
 
+func TestRankingsSortByFinalAssetValue(t *testing.T) {
+	snapshot := game.RoomSnapshot{
+		Players: []game.PlayerSnapshot{
+			{ID: "player_b", Coins: 20, CollectionValue: 40},
+			{ID: "player_c", Coins: 50, CollectionValue: 50},
+			{ID: "player_a", Coins: 10, CollectionValue: 90},
+		},
+	}
+
+	got := rankings(snapshot)
+	if len(got) != 3 {
+		t.Fatalf("rankings count = %d, want 3", len(got))
+	}
+	if got[0]["playerId"] != "player_a" || got[1]["playerId"] != "player_c" || got[2]["playerId"] != "player_b" {
+		t.Fatalf("rankings order = %+v, want player_a, player_c, player_b", got)
+	}
+	if got[0]["totalCollectionValue"] != 90 {
+		t.Fatalf("top ranking collection value = %v, want 90", got[0]["totalCollectionValue"])
+	}
+}
+
 func newTestRouter(t *testing.T) *MessageRouter {
 	t.Helper()
 

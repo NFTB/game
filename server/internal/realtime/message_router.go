@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sort"
 
 	"bidking/server/internal/application"
 	"bidking/server/internal/game"
@@ -252,12 +253,25 @@ func (r *MessageRouter) handleAuctionNextRound(ctx context.Context, session *Cli
 }
 
 func rankings(snapshot game.RoomSnapshot) []map[string]any {
-	rankings := make([]map[string]any, 0, len(snapshot.Players))
-	for _, player := range snapshot.Players {
+	players := append([]game.PlayerSnapshot(nil), snapshot.Players...)
+	sort.SliceStable(players, func(i, j int) bool {
+		leftAssetValue := players[i].Coins + players[i].CollectionValue
+		rightAssetValue := players[j].Coins + players[j].CollectionValue
+		if leftAssetValue != rightAssetValue {
+			return leftAssetValue > rightAssetValue
+		}
+		if players[i].CollectionValue != players[j].CollectionValue {
+			return players[i].CollectionValue > players[j].CollectionValue
+		}
+		return players[i].ID < players[j].ID
+	})
+
+	rankings := make([]map[string]any, 0, len(players))
+	for _, player := range players {
 		rankings = append(rankings, map[string]any{
 			"playerId":             player.ID,
 			"coins":                player.Coins,
-			"totalCollectionValue": 0,
+			"totalCollectionValue": player.CollectionValue,
 		})
 	}
 

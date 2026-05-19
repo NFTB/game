@@ -157,6 +157,9 @@ func TestSettleRoundAwardsHighestBidder(t *testing.T) {
 	if len(player2.WonLotIDs) != 1 || player2.WonLotIDs[0] != "lot_1" {
 		t.Fatalf("winner lot ids = %v, want [lot_1]", player2.WonLotIDs)
 	}
+	if player2.CollectionValue != 120 {
+		t.Fatalf("winner collection value = %d, want 120", player2.CollectionValue)
+	}
 	if snapshot.CurrentLot == nil || snapshot.CurrentLot.TrueValue != 120 || len(snapshot.CurrentLot.Items) != 1 {
 		t.Fatalf("settlement snapshot should reveal lot details: %+v", snapshot.CurrentLot)
 	}

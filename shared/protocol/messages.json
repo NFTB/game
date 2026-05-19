@@ -127,7 +127,8 @@
       "displayName": "string",
       "coins": "int",
       "ready": "bool",
-      "wonLotIds": "string[]"
+      "wonLotIds": "string[]",
+      "collectionValue": "int"
     },
     "BidSnapshot": {
       "playerId": "string",

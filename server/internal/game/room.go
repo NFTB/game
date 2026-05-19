@@ -339,6 +339,7 @@ func (r *Room) SettleRound() (RoundResult, error) {
 	winner := r.players[winnerID]
 	winner.Coins -= highest
 	winner.WonLotIDs = append(winner.WonLotIDs, r.currentLot.ID)
+	winner.CollectionValue += r.currentLot.TrueValue
 	r.players[winnerID] = winner
 
 	result := RoundResult{
@@ -362,11 +363,12 @@ func (r *Room) SnapshotFor(_ string) RoomSnapshot {
 	for _, playerID := range r.playerOrder {
 		player := r.players[playerID]
 		players = append(players, PlayerSnapshot{
-			ID:          player.ID,
-			DisplayName: player.DisplayName,
-			Coins:       player.Coins,
-			Ready:       player.Ready,
-			WonLotIDs:   append([]string(nil), player.WonLotIDs...),
+			ID:              player.ID,
+			DisplayName:     player.DisplayName,
+			Coins:           player.Coins,
+			Ready:           player.Ready,
+			WonLotIDs:       append([]string(nil), player.WonLotIDs...),
+			CollectionValue: player.CollectionValue,
 		})
 	}
 

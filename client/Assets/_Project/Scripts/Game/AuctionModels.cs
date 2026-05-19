@@ -11,6 +11,7 @@ namespace BidKing.Client.Game
         public int coins;
         public bool ready;
         public List<string> wonLotIds = new();
+        public int collectionValue;
 
         public string PlayerId => playerId;
         public string DisplayName => displayName;

@@ -66,11 +66,12 @@ func DefaultRoomRules() RoomRules {
 }
 
 type Player struct {
-	ID          string   `json:"playerId"`
-	DisplayName string   `json:"displayName"`
-	Coins       int      `json:"coins"`
-	Ready       bool     `json:"ready"`
-	WonLotIDs   []string `json:"wonLotIds"`
+	ID              string   `json:"playerId"`
+	DisplayName     string   `json:"displayName"`
+	Coins           int      `json:"coins"`
+	Ready           bool     `json:"ready"`
+	WonLotIDs       []string `json:"wonLotIds"`
+	CollectionValue int      `json:"collectionValue"`
 }
 
 type Item struct {
@@ -98,11 +99,12 @@ type Bid struct {
 }
 
 type PlayerSnapshot struct {
-	ID          string   `json:"playerId"`
-	DisplayName string   `json:"displayName"`
-	Coins       int      `json:"coins"`
-	Ready       bool     `json:"ready"`
-	WonLotIDs   []string `json:"wonLotIds"`
+	ID              string   `json:"playerId"`
+	DisplayName     string   `json:"displayName"`
+	Coins           int      `json:"coins"`
+	Ready           bool     `json:"ready"`
+	WonLotIDs       []string `json:"wonLotIds"`
+	CollectionValue int      `json:"collectionValue"`
 }
 
 type BidSnapshot struct {
