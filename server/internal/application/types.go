@@ -32,6 +32,13 @@ type CreateRoomResult struct {
 	Snapshot game.RoomSnapshot
 }
 
+type LeaveRoomResult struct {
+	RoomID      string
+	RoomClosed  bool
+	RoundResult *game.RoundResult
+	Snapshot    game.RoomSnapshot
+}
+
 type PlaceBidResult struct {
 	Accepted    bool
 	RoundResult *game.RoundResult

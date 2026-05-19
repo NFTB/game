@@ -110,50 +110,46 @@ func (s *RoomService) JoinRoom(_ context.Context, roomID string, guest GuestSess
 	return room.SnapshotFor(guest.PlayerID), nil
 }
 
-func (s *RoomService) LeaveRoom(_ context.Context, playerID string) (game.RoomSnapshot, error) {
+func (s *RoomService) LeaveRoom(_ context.Context, playerID string) (LeaveRoomResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	roomID, ok := s.playerRooms[playerID]
-	if !ok {
-		return game.RoomSnapshot{}, ErrPlayerHasNoRoom
-	}
-
-	room, err := s.room(roomID)
-	if err != nil {
-		return game.RoomSnapshot{}, err
-	}
-	if err := room.Leave(playerID); err != nil {
-		return game.RoomSnapshot{}, err
-	}
-
-	delete(s.playerRooms, playerID)
-	if room.PlayerCount() == 0 {
-		delete(s.rooms, roomID)
-	}
-	return room.SnapshotFor(playerID), nil
+	result, err := s.removePlayerLocked(playerID)
+	return LeaveRoomResult(result), err
 }
 
 func (s *RoomService) DisconnectPlayer(_ context.Context, playerID string) (DisconnectResult, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	result, err := s.removePlayerLocked(playerID)
+	return DisconnectResult(result), err
+}
+
+type playerRemovalResult struct {
+	RoomID      string
+	RoomClosed  bool
+	RoundResult *game.RoundResult
+	Snapshot    game.RoomSnapshot
+}
+
+func (s *RoomService) removePlayerLocked(playerID string) (playerRemovalResult, error) {
 	roomID, ok := s.playerRooms[playerID]
 	if !ok {
-		return DisconnectResult{}, ErrPlayerHasNoRoom
+		return playerRemovalResult{}, ErrPlayerHasNoRoom
 	}
 
 	room, err := s.room(roomID)
 	if err != nil {
-		return DisconnectResult{}, err
+		return playerRemovalResult{}, err
 	}
 
 	if err := room.Leave(playerID); err != nil {
-		return DisconnectResult{}, err
+		return playerRemovalResult{}, err
 	}
 	delete(s.playerRooms, playerID)
 
-	result := DisconnectResult{
+	result := playerRemovalResult{
 		RoomID:   roomID,
 		Snapshot: room.SnapshotFor(playerID),
 	}
@@ -166,7 +162,7 @@ func (s *RoomService) DisconnectPlayer(_ context.Context, playerID string) (Disc
 	if room.AllPlayersActed() {
 		roundResult, err := room.SettleRound()
 		if err != nil {
-			return DisconnectResult{}, err
+			return playerRemovalResult{}, err
 		}
 		result.RoundResult = &roundResult
 		result.Snapshot = room.SnapshotFor(playerID)

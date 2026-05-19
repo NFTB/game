@@ -150,6 +150,29 @@ func TestMessageRouterLeaveRoomReturnsSnapshotAndMarksSessionForClear(t *testing
 	}
 }
 
+func TestMessageRouterLeaveDuringAuctionEmitsSettlement(t *testing.T) {
+	router := newTestRouter(t)
+	ctx := context.Background()
+
+	alice := &ClientSession{}
+	bob := &ClientSession{}
+	route(t, router, ctx, alice, "auth.guest", "auth_alice", map[string]any{"displayName": "Alice"})
+	route(t, router, ctx, bob, "auth.guest", "auth_bob", map[string]any{"displayName": "Bob"})
+	route(t, router, ctx, alice, "room.create", "create", map[string]any{})
+	route(t, router, ctx, bob, "room.join", "join", map[string]any{"roomId": alice.RoomID})
+	route(t, router, ctx, alice, "room.ready", "ready_alice", map[string]any{"ready": true})
+	route(t, router, ctx, bob, "room.ready", "ready_bob", map[string]any{"ready": true})
+	route(t, router, ctx, alice, "auction.bid", "bid", map[string]any{"amount": 100})
+
+	responses := route(t, router, ctx, bob, "room.leave", "leave", map[string]any{})
+	if len(responses) != 3 {
+		t.Fatalf("response count = %d, want 3: %+v", len(responses), responses)
+	}
+	if responses[0].Type != "room.left" || responses[1].Type != "auction.round_settled" || responses[2].Type != "room.snapshot" {
+		t.Fatalf("responses = %+v, want room.left, round_settled, snapshot", responses)
+	}
+}
+
 func TestRankingsSortByFinalAssetValue(t *testing.T) {
 	snapshot := game.RoomSnapshot{
 		Players: []game.PlayerSnapshot{
