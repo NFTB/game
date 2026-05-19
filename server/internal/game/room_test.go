@@ -50,6 +50,17 @@ func TestRoomJoinReadyAndStartRound(t *testing.T) {
 	}
 }
 
+func TestNewRoomWithEmptyRulesUsesDefaults(t *testing.T) {
+	room, err := NewRoomWithRules("room_1", RoomRules{})
+	if err != nil {
+		t.Fatalf("new room with empty rules: %v", err)
+	}
+
+	if room.Rules().MaxRebidRounds != DefaultRoomRules().MaxRebidRounds {
+		t.Fatalf("max rebid rounds = %d, want %d", room.Rules().MaxRebidRounds, DefaultRoomRules().MaxRebidRounds)
+	}
+}
+
 func TestStartNextRoundChargesEntryFee(t *testing.T) {
 	rules := DefaultRoomRules()
 	rules.RoundEntryFee = 10
@@ -253,6 +264,30 @@ func TestTieEntersRebidAndThenAwardsWinner(t *testing.T) {
 	}
 	if result.Outcome != RoundOutcomeAwarded || result.WinnerID != "player_2" || result.WinningBid != 70 {
 		t.Fatalf("unexpected rebid result: %+v", result)
+	}
+}
+
+func TestTieVoidsImmediatelyWhenMaxRebidRoundsIsZero(t *testing.T) {
+	rules := DefaultRoomRules()
+	rules.MaxRebidRounds = 0
+	room := startedRoomWithRules(t, rules)
+
+	if err := room.PlaceBid("player_1", 10); err != nil {
+		t.Fatalf("bid player 1: %v", err)
+	}
+	if err := room.PlaceBid("player_2", 10); err != nil {
+		t.Fatalf("bid player 2: %v", err)
+	}
+
+	result, err := room.SettleRound()
+	if err != nil {
+		t.Fatalf("settle tied round: %v", err)
+	}
+	if result.Outcome != RoundOutcomeVoid {
+		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
+	}
+	if got := room.Phase(); got != RoomPhaseSettlement {
+		t.Fatalf("phase = %s, want %s", got, RoomPhaseSettlement)
 	}
 }
 

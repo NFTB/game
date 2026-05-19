@@ -47,6 +47,9 @@ func NewRoomWithRules(id string, rules RoomRules) (*Room, error) {
 
 func normalizeRules(rules RoomRules) (RoomRules, error) {
 	defaults := DefaultRoomRules()
+	if rules == (RoomRules{}) {
+		rules = defaults
+	}
 	if rules.MinPlayers == 0 {
 		rules.MinPlayers = defaults.MinPlayers
 	}
@@ -58,9 +61,6 @@ func normalizeRules(rules RoomRules) (RoomRules, error) {
 	}
 	if rules.MinBid == 0 {
 		rules.MinBid = defaults.MinBid
-	}
-	if rules.MaxRebidRounds == 0 {
-		rules.MaxRebidRounds = defaults.MaxRebidRounds
 	}
 	if rules.InitialGold == 0 {
 		rules.InitialGold = defaults.InitialGold
