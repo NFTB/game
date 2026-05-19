@@ -100,7 +100,7 @@
         "winnerId": "string optional",
         "winningBid": "int optional; awarded outcome only",
         "tiedPlayerIds": "string[] optional",
-        "lot": "Lot; trueValue/items omitted while rebid is pending"
+        "lot": "Lot; trueValue/items included only when outcome is awarded"
       }
     },
     {

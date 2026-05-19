@@ -418,7 +418,7 @@ func (r *Room) snapshotLot() *Lot {
 	}
 
 	lot := cloneLot(*r.currentLot)
-	if r.phase == RoomPhaseSettlement || r.phase == RoomPhaseFinished {
+	if r.shouldRevealCurrentLot() {
 		return lot
 	}
 
@@ -426,6 +426,18 @@ func (r *Room) snapshotLot() *Lot {
 		ID:          lot.ID,
 		DisplayName: lot.DisplayName,
 	}
+}
+
+func (r *Room) shouldRevealCurrentLot() bool {
+	if r.phase != RoomPhaseSettlement && r.phase != RoomPhaseFinished {
+		return false
+	}
+	if len(r.results) == 0 {
+		return false
+	}
+
+	latest := r.results[len(r.results)-1]
+	return latest.RoundNumber == r.roundNumber && latest.Outcome == RoundOutcomeAwarded
 }
 
 func (r *Room) publicLot() Lot {
@@ -500,7 +512,7 @@ func (r *Room) finishVoidRound() RoundResult {
 	result := RoundResult{
 		RoundNumber: r.roundNumber,
 		Outcome:     RoundOutcomeVoid,
-		Lot:         *cloneLot(*r.currentLot),
+		Lot:         r.publicLot(),
 	}
 	r.results = append(r.results, result)
 	r.phase = RoomPhaseSettlement
@@ -515,7 +527,7 @@ func (r *Room) finishVoidRoundWithTies(tiedPlayerIDs []string) RoundResult {
 	result := RoundResult{
 		RoundNumber:   r.roundNumber,
 		Outcome:       RoundOutcomeVoid,
-		Lot:           *cloneLot(*r.currentLot),
+		Lot:           r.publicLot(),
 		TiedPlayerIDs: append([]string(nil), tiedPlayerIDs...),
 	}
 	r.results = append(r.results, result)

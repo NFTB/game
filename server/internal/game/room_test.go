@@ -215,6 +215,14 @@ func TestAllPassesVoidRound(t *testing.T) {
 	if result.Outcome != RoundOutcomeVoid {
 		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
 	}
+	if result.Lot.TrueValue != 0 || len(result.Lot.Items) != 0 {
+		t.Fatalf("void result leaked lot details: %+v", result.Lot)
+	}
+
+	snapshot := room.SnapshotFor("player_1")
+	if snapshot.CurrentLot == nil || snapshot.CurrentLot.TrueValue != 0 || len(snapshot.CurrentLot.Items) != 0 {
+		t.Fatalf("void snapshot should hide lot details: %+v", snapshot.CurrentLot)
+	}
 }
 
 func TestTieEntersRebidAndThenAwardsWinner(t *testing.T) {
@@ -292,6 +300,9 @@ func TestTieVoidsImmediatelyWhenMaxRebidRoundsIsZero(t *testing.T) {
 	if result.Outcome != RoundOutcomeVoid {
 		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
 	}
+	if result.Lot.TrueValue != 0 || len(result.Lot.Items) != 0 {
+		t.Fatalf("void tie result leaked lot details: %+v", result.Lot)
+	}
 	if result.WinningBid != 0 {
 		t.Fatalf("void tie winning bid = %d, want hidden", result.WinningBid)
 	}
@@ -328,6 +339,9 @@ func TestTieVoidsAfterMaxRebidRounds(t *testing.T) {
 	}
 	if result.Outcome != RoundOutcomeVoid {
 		t.Fatalf("outcome = %s, want %s", result.Outcome, RoundOutcomeVoid)
+	}
+	if result.Lot.TrueValue != 0 || len(result.Lot.Items) != 0 {
+		t.Fatalf("void tie result leaked lot details: %+v", result.Lot)
 	}
 	if result.WinningBid != 0 {
 		t.Fatalf("void tie winning bid = %d, want hidden", result.WinningBid)
