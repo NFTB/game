@@ -46,7 +46,7 @@ func TestMessageRouterAuthCreateReadyAndBid(t *testing.T) {
 	}
 
 	bid := route(t, router, ctx, alice, "auction.bid", "bid1", map[string]any{"amount": 100})
-	if len(bid) != 2 || bid[0].Type != "auction.bid_accepted" || bid[1].Type != "room.snapshot" {
+	if len(bid) != 1 || bid[0].Type != "auction.bid_accepted" {
 		t.Fatalf("bid response = %+v", bid)
 	}
 }

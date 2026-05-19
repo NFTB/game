@@ -193,14 +193,9 @@ func (r *MessageRouter) handleAuctionBid(ctx context.Context, session *ClientSes
 
 	result, err := r.rooms.PlaceBid(ctx, session.RoomID, session.PlayerID, payload.Amount)
 	if err != nil {
-		responses := []OutboundEnvelope{
+		return []OutboundEnvelope{
 			outbound(envelope.RequestID, "auction.bid_rejected", ErrorPayload{Code: "bid_rejected", Message: err.Error()}),
-		}
-		if result.Snapshot.RoomID != "" {
-			responses = append(responses, outbound(envelope.RequestID, "room.snapshot", result.Snapshot))
-		}
-
-		return responses, nil
+		}, nil
 	}
 
 	return r.auctionAcceptedResponses(envelope.RequestID, "auction.bid_accepted", session.PlayerID, result), nil
@@ -213,14 +208,9 @@ func (r *MessageRouter) handleAuctionPass(ctx context.Context, session *ClientSe
 
 	result, err := r.rooms.PassBid(ctx, session.RoomID, session.PlayerID)
 	if err != nil {
-		responses := []OutboundEnvelope{
+		return []OutboundEnvelope{
 			outbound(envelope.RequestID, "auction.bid_rejected", ErrorPayload{Code: "pass_rejected", Message: err.Error()}),
-		}
-		if result.Snapshot.RoomID != "" {
-			responses = append(responses, outbound(envelope.RequestID, "room.snapshot", result.Snapshot))
-		}
-
-		return responses, nil
+		}, nil
 	}
 
 	return r.auctionAcceptedResponses(envelope.RequestID, "auction.pass_accepted", session.PlayerID, result), nil
@@ -234,8 +224,8 @@ func (r *MessageRouter) auctionAcceptedResponses(requestID string, acceptedType 
 	}
 	if result.RoundResult != nil {
 		responses = append(responses, outbound(requestID, "auction.round_settled", *result.RoundResult))
+		responses = append(responses, outbound(requestID, "room.snapshot", result.Snapshot))
 	}
-	responses = append(responses, outbound(requestID, "room.snapshot", result.Snapshot))
 
 	return responses
 }

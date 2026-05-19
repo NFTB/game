@@ -106,8 +106,6 @@ func TestHubBroadcastsRoundSettled(t *testing.T) {
 
 	writeClientTextFrame(t, aliceConn, mustEnvelope(t, "auction.bid", "bid", map[string]any{"amount": 100}))
 	readTypedServerMessage(t, aliceReader)
-	readTypedServerMessage(t, aliceReader)
-	readTypedServerMessage(t, bobReader)
 
 	writeClientTextFrame(t, bobConn, mustEnvelope(t, "auction.pass", "pass", map[string]any{}))
 	aliceSettled := readTypedServerMessage(t, aliceReader)
