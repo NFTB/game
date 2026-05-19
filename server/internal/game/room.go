@@ -341,7 +341,7 @@ func (r *Room) SnapshotFor(_ string) RoomSnapshot {
 
 	var lot *Lot
 	if r.currentLot != nil {
-		lot = cloneLot(*r.currentLot)
+		lot = r.snapshotLot()
 	}
 
 	return RoomSnapshot{
@@ -365,6 +365,22 @@ func (r *Room) Results() []RoundResult {
 	}
 
 	return results
+}
+
+func (r *Room) snapshotLot() *Lot {
+	if r.currentLot == nil {
+		return nil
+	}
+
+	lot := cloneLot(*r.currentLot)
+	if r.phase == RoomPhaseSettlement || r.phase == RoomPhaseFinished {
+		return lot
+	}
+
+	return &Lot{
+		ID:          lot.ID,
+		DisplayName: lot.DisplayName,
+	}
 }
 
 func (r *Room) highestBidders() (int, []string) {
