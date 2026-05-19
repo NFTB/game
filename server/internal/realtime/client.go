@@ -78,6 +78,24 @@ func (h *Hub) unregister(client *Client) {
 	close(client.send)
 }
 
+func (h *Hub) disconnect(client *Client, r *http.Request) {
+	if client.session.PlayerID == "" {
+		return
+	}
+
+	result, err := h.router.rooms.DisconnectPlayer(r.Context(), client.session.PlayerID)
+	if err != nil {
+		return
+	}
+	if result.RoomClosed || result.RoomID == "" {
+		return
+	}
+	if result.RoundResult != nil {
+		h.broadcastRoom(result.RoomID, outbound("", "auction.round_settled", *result.RoundResult))
+	}
+	h.broadcastRoom(result.RoomID, outbound("", "room.snapshot", result.Snapshot))
+}
+
 func (h *Hub) refreshRoom(client *Client) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -175,6 +193,7 @@ func (h *Hub) send(client *Client, response OutboundEnvelope) {
 func (c *Client) readLoop(r *http.Request) {
 	defer func() {
 		c.hub.unregister(c)
+		c.hub.disconnect(c, r)
 		_ = c.conn.Close()
 	}()
 

@@ -21,6 +21,7 @@ type RoomCommands interface {
 	CreateRoom(ctx context.Context, guest application.GuestSession) (application.CreateRoomResult, error)
 	JoinRoom(ctx context.Context, roomID string, guest application.GuestSession) (game.RoomSnapshot, error)
 	LeaveRoom(ctx context.Context, playerID string) (game.RoomSnapshot, error)
+	DisconnectPlayer(ctx context.Context, playerID string) (application.DisconnectResult, error)
 	SetReady(ctx context.Context, roomID string, playerID string, ready bool) (game.RoomSnapshot, error)
 	PlaceBid(ctx context.Context, roomID string, playerID string, amount int) (application.PlaceBidResult, error)
 	PassBid(ctx context.Context, roomID string, playerID string) (application.PlaceBidResult, error)

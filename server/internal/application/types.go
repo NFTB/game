@@ -49,3 +49,10 @@ type AdvanceRoundResult struct {
 	Waiting  bool
 	Snapshot game.RoomSnapshot
 }
+
+type DisconnectResult struct {
+	RoomID      string
+	RoomClosed  bool
+	RoundResult *game.RoundResult
+	Snapshot    game.RoomSnapshot
+}

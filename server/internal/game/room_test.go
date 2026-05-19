@@ -76,6 +76,27 @@ func TestRoomLeaveRemovesPlayerBeforeRoundStarts(t *testing.T) {
 	}
 }
 
+func TestRoomLeaveDuringAuctionRemovesPendingAction(t *testing.T) {
+	room := startedRoomWithPlayers(t, []Player{
+		{ID: "player_1", DisplayName: "A", Coins: 100},
+		{ID: "player_2", DisplayName: "B", Coins: 100},
+		{ID: "player_3", DisplayName: "C", Coins: 100},
+	})
+
+	if err := room.PlaceBid("player_1", 10); err != nil {
+		t.Fatalf("bid player 1: %v", err)
+	}
+	if err := room.PlaceBid("player_2", 20); err != nil {
+		t.Fatalf("bid player 2: %v", err)
+	}
+	if err := room.Leave("player_3"); err != nil {
+		t.Fatalf("leave player 3: %v", err)
+	}
+	if !room.AllPlayersActed() {
+		t.Fatal("remaining players have all acted after player 3 leaves")
+	}
+}
+
 func TestPlaceBidRejectsInvalidAmounts(t *testing.T) {
 	room := startedRoom(t)
 

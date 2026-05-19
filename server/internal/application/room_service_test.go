@@ -157,6 +157,56 @@ func TestRoomServiceLeaveRoomRemovesPlayerMapping(t *testing.T) {
 	}
 }
 
+func TestRoomServiceDisconnectRemovesLobbyPlayer(t *testing.T) {
+	service := newTestRoomService(t)
+	ctx := context.Background()
+
+	alice := service.RegisterGuest(ctx, "Alice")
+	bob := service.RegisterGuest(ctx, "Bob")
+	created, err := service.CreateRoom(ctx, alice)
+	if err != nil {
+		t.Fatalf("create room: %v", err)
+	}
+	if _, err := service.JoinRoom(ctx, created.RoomID, bob); err != nil {
+		t.Fatalf("join bob: %v", err)
+	}
+
+	disconnected, err := service.DisconnectPlayer(ctx, bob.PlayerID)
+	if err != nil {
+		t.Fatalf("disconnect bob: %v", err)
+	}
+	if disconnected.RoomID != created.RoomID || disconnected.RoomClosed {
+		t.Fatalf("disconnect result = %+v, want open room", disconnected)
+	}
+	if got := len(disconnected.Snapshot.Players); got != 1 {
+		t.Fatalf("player count = %d, want 1", got)
+	}
+	if _, err := service.RoomIDForPlayer(ctx, bob.PlayerID); !errors.Is(err, ErrPlayerHasNoRoom) {
+		t.Fatalf("room id for bob error = %v, want %v", err, ErrPlayerHasNoRoom)
+	}
+}
+
+func TestRoomServiceDisconnectDuringAuctionCanSettleRemainingActions(t *testing.T) {
+	service := newTestRoomService(t)
+	ctx := context.Background()
+	roomID, alice, bob := readyStartedRoom(t, ctx, service)
+
+	if _, err := service.PlaceBid(ctx, roomID, alice.PlayerID, 100); err != nil {
+		t.Fatalf("alice bid: %v", err)
+	}
+
+	disconnected, err := service.DisconnectPlayer(ctx, bob.PlayerID)
+	if err != nil {
+		t.Fatalf("disconnect bob: %v", err)
+	}
+	if disconnected.RoundResult == nil {
+		t.Fatal("disconnecting last pending bidder should settle the round")
+	}
+	if disconnected.RoundResult.WinnerID != alice.PlayerID {
+		t.Fatalf("winner = %s, want %s", disconnected.RoundResult.WinnerID, alice.PlayerID)
+	}
+}
+
 func TestRoomServiceAdvanceAfterSettlementStartsNextRound(t *testing.T) {
 	service := newTestRoomService(t)
 	ctx := context.Background()

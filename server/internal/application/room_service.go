@@ -128,7 +128,51 @@ func (s *RoomService) LeaveRoom(_ context.Context, playerID string) (game.RoomSn
 	}
 
 	delete(s.playerRooms, playerID)
+	if room.PlayerCount() == 0 {
+		delete(s.rooms, roomID)
+	}
 	return room.SnapshotFor(playerID), nil
+}
+
+func (s *RoomService) DisconnectPlayer(_ context.Context, playerID string) (DisconnectResult, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	roomID, ok := s.playerRooms[playerID]
+	if !ok {
+		return DisconnectResult{}, ErrPlayerHasNoRoom
+	}
+
+	room, err := s.room(roomID)
+	if err != nil {
+		return DisconnectResult{}, err
+	}
+
+	if err := room.Leave(playerID); err != nil {
+		return DisconnectResult{}, err
+	}
+	delete(s.playerRooms, playerID)
+
+	result := DisconnectResult{
+		RoomID:   roomID,
+		Snapshot: room.SnapshotFor(playerID),
+	}
+	if room.PlayerCount() == 0 {
+		delete(s.rooms, roomID)
+		result.RoomClosed = true
+		return result, nil
+	}
+
+	if room.AllPlayersActed() {
+		roundResult, err := room.SettleRound()
+		if err != nil {
+			return DisconnectResult{}, err
+		}
+		result.RoundResult = &roundResult
+		result.Snapshot = room.SnapshotFor(playerID)
+	}
+
+	return result, nil
 }
 
 func (s *RoomService) SetReady(ctx context.Context, roomID string, playerID string, ready bool) (game.RoomSnapshot, error) {

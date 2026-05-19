@@ -122,14 +122,15 @@ func (r *Room) Join(player Player) error {
 }
 
 func (r *Room) Leave(playerID string) error {
-	if r.phase != RoomPhaseLobby {
-		return ErrInvalidPhase
-	}
 	if _, ok := r.players[playerID]; !ok {
 		return ErrPlayerNotInRoom
 	}
 
 	delete(r.players, playerID)
+	delete(r.bids, playerID)
+	delete(r.rebidParticipants, playerID)
+	delete(r.rebidFloors, playerID)
+	delete(r.settlementReady, playerID)
 	for i, orderedPlayerID := range r.playerOrder {
 		if orderedPlayerID == playerID {
 			r.playerOrder = append(r.playerOrder[:i], r.playerOrder[i+1:]...)
@@ -138,6 +139,10 @@ func (r *Room) Leave(playerID string) error {
 	}
 
 	return nil
+}
+
+func (r *Room) PlayerCount() int {
+	return len(r.players)
 }
 
 func (r *Room) SetReady(playerID string, ready bool) error {
@@ -270,9 +275,9 @@ func (r *Room) Pass(playerID string) error {
 func (r *Room) AllPlayersActed() bool {
 	switch r.phase {
 	case RoomPhaseAuction:
-		return len(r.bids) == len(r.players)
+		return len(r.players) > 0 && len(r.bids) == len(r.players)
 	case RoomPhaseRebid:
-		return len(r.bids) == len(r.rebidParticipants)
+		return len(r.rebidParticipants) > 0 && len(r.bids) == len(r.rebidParticipants)
 	default:
 		return false
 	}
